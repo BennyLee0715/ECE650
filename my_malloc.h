@@ -18,11 +18,16 @@ typedef struct BlockInfo{
     size_t size;
     struct BlockInfo * next;
     struct BlockInfo * prev;
-    int isFree;
 } block_t;
+typedef (block_t*)(*FunType)(void);
 
 // Customized functions
 void _free(void *ptr);
+void free_list_add(block_t *block);
+void free_list_remove(block_t *block);
+void free_list_merge();
+block_t *split(block_t *block, size_t size);
+
 
 block_t* head_block = NULL; // linked list head
 unsigned long data_segment_size = 0;
