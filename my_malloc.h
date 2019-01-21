@@ -19,7 +19,7 @@ typedef struct BlockInfo{
     struct BlockInfo * next;
     struct BlockInfo * prev;
 } block_t;
-typedef (block_t*)(*FunType)(void);
+typedef block_t* (*FunType)(size_t);
 
 // Customized functions
 void _free(void *ptr);
@@ -27,7 +27,11 @@ void free_list_add(block_t *block);
 void free_list_remove(block_t *block);
 void free_list_merge();
 block_t *split(block_t *block, size_t size);
-
+block_t *request_memory(size_t size);
+block_t * find_ff();
+block_t * find_bf();
+void * _malloc(size_t size, FunType fp);
+void stat(const char *str);
 
 block_t* head_block = NULL; // linked list head
 unsigned long data_segment_size = 0;
