@@ -29,7 +29,8 @@ typedef block_t* (*FunType)(size_t);
 void _free(void *ptr);
 void free_list_add(block_t *block);
 void free_list_remove(block_t *block);
-void free_list_merge();
+void free_list_merge(block_t *block);
+
 block_t *split(block_t *block, size_t size);
 block_t *request_memory(size_t size);
 block_t * find_ff();
