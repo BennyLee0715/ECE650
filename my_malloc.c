@@ -2,16 +2,28 @@
 #include "assert.h"
 
 block_t *request_memory(size_t size) {
-  void *ptr = sbrk(size + sizeof(block_t));
+    size_t alloc_size = size > ALLOC_UNIT ? (size + sizeof(block_t)) : ALLOC_UNIT;
+    void *ptr = sbrk(alloc_size);
   if (ptr == (void *)-1) {
     return NULL;
   }
-  data_segment_size += size + sizeof(block_t);
+  //data_segment_size += size + sizeof(block_t);
+  data_segment_size += alloc_size;
   block_t *block = ptr;
   block->next = NULL;
   block->prev = NULL;
-  block->size = size;
-  //printf("[Info] Block space: %10p - %10p", block, ptr + size + sizeof(block_t));
+  if(alloc_size >= size + 2 * sizeof(block_t)){
+      block->size = size;
+      block_t *free_block = ptr + size + sizeof(block_t);
+      free_block->prev = NULL;
+      free_block->next = NULL;
+      free_block->size = alloc_size - size - 2 * sizeof(block_t);
+      free_list_add(free_block);
+  }
+  else {
+      block->size = alloc_size;
+  }
+  //printf("[Info] Block space: %10p - %10p\n", block, ptr + size + sizeof(block_t));
   return block;
 }
 
@@ -186,6 +198,8 @@ block_t *split(block_t *curr, size_t sz) {
     curr->next->prev = rest;
   }
 
+  rest->size = curr->size - sz - sizeof(block_t);
+  curr->size = sz;
   curr->next = NULL;
   curr->prev = NULL;
   return rest;
@@ -199,5 +213,5 @@ void stat(const char *str){
         //printf("Block %d is at %10p - %10p, with size of %ld\n", ++cnt, curr, (void *)curr + curr->size + sizeof(block_t), curr->size);
         curr = curr->next;
     }
-    //printf("============================================================\n");
+//printf("============================================================\n");
 }

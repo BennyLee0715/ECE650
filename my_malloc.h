@@ -21,6 +21,10 @@ typedef struct BlockInfo{
 } block_t;
 typedef block_t* (*FunType)(size_t);
 
+#ifndef ALLOC_UNIT
+#define ALLOC_UNIT 3 * sysconf(_SC_PAGESIZE)
+#endif
+
 // Customized functions
 void _free(void *ptr);
 void free_list_add(block_t *block);
