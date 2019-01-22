@@ -155,7 +155,7 @@ void free_list_remove(block_t *block) {
 }
 
 void free_list_merge(block_t *curr) {
-  
+
   assert(curr != NULL);
 
   block_t *prev = curr->prev;
@@ -165,6 +165,7 @@ void free_list_merge(block_t *curr) {
       if(curr->next) {
           curr->next->prev = prev;
       }
+      curr = prev;
   }
 
   block_t *next = curr->next;
@@ -175,7 +176,7 @@ void free_list_merge(block_t *curr) {
           next->next->prev = curr;
       }
   }
-  
+
   /* while (curr && curr->next) { */
   /*   block_t *temp = curr->next; */
   /*   unsigned long addr_next = */
