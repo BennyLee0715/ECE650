@@ -7,7 +7,6 @@ block_t *request_memory(size_t size) {
   if (ptr == (void *)-1) {
     return NULL;
   }
-  // data_segment_size += size + sizeof(block_t);
   data_segment_size += alloc_size;
   block_t *block = ptr;
   block->next = NULL;
@@ -22,8 +21,6 @@ block_t *request_memory(size_t size) {
   } else {
     block->size = alloc_size;
   }
-  // printf("[Info] Block space: %10p - %10p\n", block, ptr + size +
-  // sizeof(block_t));
   return block;
 }
 
@@ -50,8 +47,6 @@ block_t *find_bf(size_t size) {
 }
 
 void *_malloc(size_t size, FunType fp) {
-  // printf("When mallocing %ld\n", size);
-  //stat("");
   if (head_block == NULL) { // no available freed blocks
     block_t *block = request_memory(size);
     return block == NULL ? NULL : block + 1;
@@ -73,9 +68,7 @@ void *_malloc(size_t size, FunType fp) {
     } else {
       // split into two
       // note: a block with 0-size is acceptable here
-      block_t *rest = split(curr, size);
-      // free_list_remove(curr);
-      // free_list_add(rest);
+      split(curr, size);
       return curr + 1;
     }
   }
@@ -99,17 +92,9 @@ unsigned long get_data_segment_free_space_size() {
 void _free(void *ptr) {
   if (ptr == NULL)
     return;
-  // printf("Before freeing\n");
-  //stat("");
   block_t *block = (block_t *)ptr - 1;
-  // printf("I am freeing %ld ints %p - %p\n", block->size / 4, block, (void
-  // *)block + sizeof(block_t) + block->size);
   free_list_add(block);
-  // printf("In the middle of freeing\n");
-  //stat("");
   free_list_merge(block);
-  // printf("After freeing\n");
-  //stat("");
 }
 
 void free_list_add(block_t *block) {
@@ -159,49 +144,23 @@ void free_list_merge(block_t *curr) {
   assert(curr != NULL);
 
   block_t *prev = curr->prev;
-  if(prev && (void *)prev + sizeof(block_t) + prev->size == (void *)curr){
-      prev->size += sizeof(block_t) + curr->size;
-      prev->next = curr->next;
-      if(curr->next) {
-          curr->next->prev = prev;
-      }
-      curr = prev;
+  if (prev && (void *)prev + sizeof(block_t) + prev->size == (void *)curr) {
+    prev->size += sizeof(block_t) + curr->size;
+    prev->next = curr->next;
+    if (curr->next) {
+      curr->next->prev = prev;
+    }
+    curr = prev;
   }
 
   block_t *next = curr->next;
-  if(next && (void *)next == (void *)curr + sizeof(block_t) + curr->size){
-      curr->size += sizeof(block_t) + next->size;
-      curr->next = next->next;
-      if(next->next){
-          next->next->prev = curr;
-      }
+  if (next && (void *)next == (void *)curr + sizeof(block_t) + curr->size) {
+    curr->size += sizeof(block_t) + next->size;
+    curr->next = next->next;
+    if (next->next) {
+      next->next->prev = curr;
+    }
   }
-
-  /* while (curr && curr->next) { */
-  /*   block_t *temp = curr->next; */
-  /*   unsigned long addr_next = */
-  /*       (unsigned long)curr + sizeof(block_t) + curr->size; */
-  /*   unsigned long addr_temp = (unsigned long)temp; */
-  /*   if (addr_next == addr_temp) { */
-  /*     curr->size += sizeof(block_t) + temp->size; */
-  /*     curr->next = temp->next; */
-  /*     if (temp->next != NULL) */
-  /*       temp->next->prev = curr; */
-
-  /*     temp = curr->next; */
-  /*     addr_next = (unsigned long)curr + sizeof(block_t) + curr->size; */
-  /*     addr_temp = (unsigned long)temp; */
-  /*     if (temp && addr_next == addr_temp) { */
-  /*       curr->size += sizeof(block_t) + temp->size; */
-  /*       curr->next = temp->next; */
-  /*       if (temp->next != NULL) { */
-  /*         assert(temp->next != NULL); */
-  /*         temp->next->prev = curr; */
-  /*       } */
-  /*     } */
-  /*   } */
-  /*   curr = curr->next; */
-  /* } */
 }
 
 block_t *split(block_t *curr, size_t sz) {
@@ -218,23 +177,11 @@ block_t *split(block_t *curr, size_t sz) {
   if (curr->next) { // not tail
     curr->next->prev = rest;
   }
-
+  
   rest->size = curr->size - sz - sizeof(block_t);
   data_segment_free_space_size -= sz + sizeof(block_t);
   curr->size = sz;
   curr->next = NULL;
   curr->prev = NULL;
   return rest;
-}
-
-void stat(const char *str) {
-  // printf("%s\n", str);
-  block_t *curr = head_block;
-  int cnt = 0;
-  while (curr) {
-    // printf("Block %d is at %10p - %10p, with size of %ld\n", ++cnt, curr,
-    // (void *)curr + curr->size + sizeof(block_t), curr->size);
-    curr = curr->next;
-  }
-  // printf("============================================================\n");
 }
