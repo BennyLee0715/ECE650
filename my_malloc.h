@@ -22,7 +22,7 @@ typedef struct BlockInfo{
 typedef block_t* (*FunType)(size_t);
 
 #ifndef ALLOC_UNIT
-#define ALLOC_UNIT 65536 //3 * sysconf(_SC_PAGESIZE)
+#define ALLOC_UNIT 65536
 #endif
 
 // Customized functions

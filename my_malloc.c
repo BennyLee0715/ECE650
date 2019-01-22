@@ -68,7 +68,9 @@ void *_malloc(size_t size, FunType fp) {
     } else {
       // split into two
       // note: a block with 0-size is acceptable here
-      split(curr, size);
+      block_t * rest = split(curr, size);
+      free_list_remove(curr);
+      free_list_add(rest);
       return curr + 1;
     }
   }
@@ -165,23 +167,10 @@ void free_list_merge(block_t *curr) {
 
 block_t *split(block_t *curr, size_t sz) {
   block_t *rest = (void *)curr + sizeof(block_t) + sz;
-
-  rest->prev = curr->prev;
-  if (curr->prev) { // not head
-    curr->prev->next = rest;
-  } else { // head
-    head_block = rest;
-  }
-
-  rest->next = curr->next;
-  if (curr->next) { // not tail
-    curr->next->prev = rest;
-  }
-  
   rest->size = curr->size - sz - sizeof(block_t);
-  data_segment_free_space_size -= sz + sizeof(block_t);
+  data_segment_free_space_size -= rest->size + sizeof(block_t);
   curr->size = sz;
-  curr->next = NULL;
-  curr->prev = NULL;
-  return rest;
+  rest->prev = NULL;
+  rest->next = NULL;
+ return rest;
 }
