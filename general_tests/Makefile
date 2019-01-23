@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-O3 -fPIC
-MALLOC_VERSION=FF
+CFLAGS=-O -fPIC -ggdb3
+MALLOC_VERSION=BF
 WDIR=..
 
 all: mymalloc_test

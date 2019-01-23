@@ -22,7 +22,7 @@ typedef struct BlockInfo{
 typedef block_t* (*FunType)(size_t);
 
 #ifndef ALLOC_UNIT
-#define ALLOC_UNIT 65536
+#define ALLOC_UNIT 0// 65536
 #endif
 
 // Customized functions
@@ -41,3 +41,7 @@ void stat(const char *str);
 block_t* head_block = NULL; // linked list head
 unsigned long data_segment_size = 0;
 unsigned long data_segment_free_space_size = 0;
+unsigned long list_length = 0;
+unsigned long max_list_length = 0;
+unsigned get_list_length() { return list_length; }
+unsigned get_max_list_length() { return max_list_length; }

@@ -2,7 +2,9 @@
 #include "assert.h"
 
 block_t *request_memory(size_t size) {
-  size_t alloc_size = size > ALLOC_UNIT ? (size + sizeof(block_t)) : ALLOC_UNIT;
+  size_t alloc_size = size + sizeof(block_t) > ALLOC_UNIT
+                          ? (size + sizeof(block_t))
+                          : ALLOC_UNIT;
   void *ptr = sbrk(alloc_size);
   if (ptr == (void *)-1) {
     return NULL;
@@ -17,9 +19,9 @@ block_t *request_memory(size_t size) {
     free_block->prev = NULL;
     free_block->next = NULL;
     free_block->size = alloc_size - size - 2 * sizeof(block_t);
-    free_list_add(free_block);
+    free_list_add(free_block); // can be further imporved with tail pointer
   } else {
-    block->size = alloc_size;
+    block->size = alloc_size - sizeof(block_t);
   }
   return block;
 }
@@ -36,10 +38,12 @@ block_t *find_bf(size_t size) {
   block_t *curr = head_block;
   block_t *optimal_curr = NULL;
   while (curr) {
-    if (curr->size >= size) {
+    if (curr->size > size + sizeof(block_t)) {
       if (optimal_curr == NULL || curr->size < optimal_curr->size) {
         optimal_curr = curr;
       }
+    } else if (curr->size >= size) { // perfect block found
+      return curr;
     }
     curr = curr->next;
   }
@@ -68,10 +72,12 @@ void *_malloc(size_t size, FunType fp) {
     } else {
       // split into two
       // note: a block with 0-size is acceptable here
-      block_t * rest = split(curr, size);
-      free_list_remove(curr);
-      free_list_add(rest);
-      return curr + 1;
+      block_t *malloced_block =
+          split(curr, curr->size - size - sizeof(block_t));
+      return malloced_block + 1;
+      // free_list_remove(curr);
+      // free_list_add(rest);
+      // return curr + 1;
     }
   }
 }
@@ -101,7 +107,12 @@ void _free(void *ptr) {
 
 void free_list_add(block_t *block) {
   data_segment_free_space_size += block->size + sizeof(block_t);
+  list_length += 1;
+  max_list_length =
+      max_list_length < list_length ? list_length : max_list_length;
 
+  block->next = NULL;
+  block->prev = NULL;
   if (head_block == NULL) { // no freed blocks
     head_block = block;
   } else if ((unsigned long)head_block > (unsigned long)block) { // add to front
@@ -113,7 +124,7 @@ void free_list_add(block_t *block) {
     while (curr->next && (unsigned long)curr->next < (unsigned long)block) {
       curr = curr->next;
     }
-    if (curr->next) {
+    if (curr->next != NULL) {
       curr->next->prev = block;
     }
     block->prev = curr;
@@ -125,7 +136,7 @@ void free_list_add(block_t *block) {
 void free_list_remove(block_t *block) {
   assert((unsigned long)block >= (unsigned long)head_block);
   data_segment_free_space_size -= block->size + sizeof(block_t);
-
+  list_length -= 1;
   if (block->prev == NULL && block->next == NULL) {
     head_block = NULL;
   } else if (block->prev == NULL) {
@@ -153,6 +164,7 @@ void free_list_merge(block_t *curr) {
       curr->next->prev = prev;
     }
     curr = prev;
+    list_length -= 1;
   }
 
   block_t *next = curr->next;
@@ -162,15 +174,17 @@ void free_list_merge(block_t *curr) {
     if (next->next) {
       next->next->prev = curr;
     }
+    list_length -= 1;
   }
 }
 
 block_t *split(block_t *curr, size_t sz) {
-  block_t *rest = (void *)curr + sizeof(block_t) + sz;
-  rest->size = curr->size - sz - sizeof(block_t);
-  data_segment_free_space_size -= rest->size + sizeof(block_t);
+  data_segment_free_space_size -= curr->size - sz;
+  size_t tot = curr->size;
   curr->size = sz;
-  rest->prev = NULL;
-  rest->next = NULL;
- return rest;
+  block_t *malloced_block = (void *)curr + curr->size + sizeof(block_t);
+  malloced_block->size = tot - sz - sizeof(block_t);
+  malloced_block->prev = NULL;
+  malloced_block->next = NULL;
+  return malloced_block;
 }
