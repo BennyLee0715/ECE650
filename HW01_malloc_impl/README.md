@@ -2,11 +2,13 @@
 
 ## Background
 
-This is Homework 1 for Duke ECE650 2019 spring. My report for this assignment is available at [report.md](https://github.com/menyf/ECE650_HW1_malloc_impl/blob/master/report.md)
+Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/requirement.pdf) for specific requirement.
+
+My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md)
 
 ## Usage and Result
 
-Tests were ran on Duke virtual machine with Ubuntu18
+Tests were ran on Duke virtual machine with Ubuntu 18.
 
 ```
 make

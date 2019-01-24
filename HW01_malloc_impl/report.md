@@ -5,7 +5,7 @@
 
 ## 1. Overview of implementation
 
-For this assignment, I tried a lot of way on implementation and fixed lots of bugs. I will mention some of them, and explain the reasons. There would be multiple versions, but the **1.2 Basic Implementation with Free List** part is the implementation of my submission code. If necessary, graders can visit my [git repository](https://github.com/menyf/ECE650_HW1_malloc_impl) and reset to previous commit to check the code, though some are bugy.
+For this assignment, I tried a lot of way on implementation and fixed lots of bugs. I will mention some of them, and explain the reasons. There would be multiple versions, but the **1.2 Basic Implementation with Free List** part is the implementation of my submission code. If necessary, graders can visit my [git repository](https://github.com/menyf/ECE650/HW01_malloc_impl) and reset to previous commit to check the code, though some are bugy.
 
 ### 1.1 Simple Stimulation on Memory Allocation
 
