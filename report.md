@@ -89,9 +89,7 @@ For `small_range_rand_allocs`, it randomly swap the values in `free_list`, it fr
 For `large_range_rand_allocs`, it is doing the same thing as `small_range_rand_allocs`, but the size of blocks varies greatly than `small_range_rand_allocs`. My result turns out to prove the theory I put. For this situation, I believe it will forms a rather long list. Then iteration may take the critical time consumption rather than `sbrk()`.
 
 
-### 2.3 Conclusion
-
-In reality, data size varies greatly from a very small piece to a very large one, which is more like `large_range_rand_allocs` here. I would recommend first-fit policy rather than best-fit policy, if we need to go through a long list, it would cost too much time, and the chance to find a perfect block is barely possible. Also, if we know the data range is pretty small, I would recommend best-fit policy.
+**Conclusion:** In reality, data size varies greatly from a very small piece to a very large one, which is more like `large_range_rand_allocs` here. I would recommend first-fit policy rather than best-fit policy, if we need to go through a long list, it would cost too much time, and the chance to find a perfect block is barely possible. Also, if we know the data range is pretty small, I would recommend best-fit policy.
 
 
 ## 3. Other Lessons
