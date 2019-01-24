@@ -2,7 +2,7 @@
 
 ## Background
 
-This is Homework 1 for Duke ECE650 2019 spring.
+This is Homework 1 for Duke ECE650 2019 spring. My report for this assignment is available at [report.md](https://github.com/menyf/ECE650_HW1_malloc_impl/blob/master/report.md)
 
 ## Usage and Result
 
@@ -17,7 +17,7 @@ make
 Execution Time = 17.032398 seconds
 Fragmentation  = 0.075614
 ~ $ ./equal_size_allocs
-Execution Time = 28.754213 seconds
+Execution Time = 18.925215 seconds
 Fragmentation  = 0.450000
 ~ $ ./large_range_rand_allocs
 Execution Time = 109.246684 seconds
@@ -27,7 +27,7 @@ Fragmentation  = 0.094561
 Execution Time = 5.557294 seconds
 Fragmentation  = 0.027893
 ~ $ ./equal_size_allocs
-Execution Time = 18.465461 seconds
+Execution Time = 19.260199 seconds
 Fragmentation  = 0.450000
 ~ $ ./large_range_rand_allocs
 Execution Time = 137.826278 seconds
