@@ -2,9 +2,7 @@
 #include "assert.h"
 
 block_t *request_memory(size_t size) {
-  size_t alloc_size = size + sizeof(block_t) > ALLOC_UNIT
-                          ? (size + sizeof(block_t))
-                          : ALLOC_UNIT;
+  size_t alloc_size = size + sizeof(block_t);
   void *ptr = sbrk(alloc_size);
   if (ptr == (void *)-1) {
     return NULL;
@@ -13,16 +11,7 @@ block_t *request_memory(size_t size) {
   block_t *block = ptr;
   block->next = NULL;
   block->prev = NULL;
-  if (alloc_size >= size + 2 * sizeof(block_t)) {
-    block->size = size;
-    block_t *free_block = ptr + size + sizeof(block_t);
-    free_block->prev = NULL;
-    free_block->next = NULL;
-    free_block->size = alloc_size - size - 2 * sizeof(block_t);
-    free_list_add(free_block); // can be further imporved with tail pointer
-  } else {
-    block->size = alloc_size - sizeof(block_t);
-  }
+  block->size = alloc_size - sizeof(block_t);
   return block;
 }
 
@@ -107,9 +96,6 @@ void _free(void *ptr) {
 
 void free_list_add(block_t *block) {
   data_segment_free_space_size += block->size + sizeof(block_t);
-  list_length += 1;
-  max_list_length =
-      max_list_length < list_length ? list_length : max_list_length;
 
   block->next = NULL;
   block->prev = NULL;
@@ -136,7 +122,6 @@ void free_list_add(block_t *block) {
 void free_list_remove(block_t *block) {
   assert((unsigned long)block >= (unsigned long)head_block);
   data_segment_free_space_size -= block->size + sizeof(block_t);
-  list_length -= 1;
   if (block->prev == NULL && block->next == NULL) {
     head_block = NULL;
   } else if (block->prev == NULL) {
@@ -153,9 +138,7 @@ void free_list_remove(block_t *block) {
 }
 
 void free_list_merge(block_t *curr) {
-
   assert(curr != NULL);
-
   block_t *prev = curr->prev;
   if (prev && (void *)prev + sizeof(block_t) + prev->size == (void *)curr) {
     prev->size += sizeof(block_t) + curr->size;
@@ -164,7 +147,6 @@ void free_list_merge(block_t *curr) {
       curr->next->prev = prev;
     }
     curr = prev;
-    list_length -= 1;
   }
 
   block_t *next = curr->next;
@@ -174,7 +156,6 @@ void free_list_merge(block_t *curr) {
     if (next->next) {
       next->next->prev = curr;
     }
-    list_length -= 1;
   }
 }
 
