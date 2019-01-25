@@ -1,5 +1,4 @@
 #include "my_malloc.h"
-#include "assert.h"
 
 // First Fit malloc/free
 void *ff_malloc(size_t size) { return _malloc(size, find_ff); }
@@ -34,7 +33,7 @@ void _free(void *ptr) {
  * 2. modify necessary pointers
  */
 void free_list_add(block_t *block) {
-  assert(block && block->isFree == 0);
+  
   block->isFree = 1;
   block->next_list = head_block;
   if (head_block)
@@ -48,23 +47,17 @@ void free_list_add(block_t *block) {
  * 3. update pointers
  */
 void free_list_merge(block_t *block) {
-  assert(block);
-  assert(block->isFree);
-
+  
   block_t *prev_phys = block->prev_phys;
   block_t *next_phys = block->next_phys;
-  assert(prev_phys == NULL || prev_phys->next_phys == block);
+  
 
   if (next_phys && next_phys->isFree) {
-    assert(block->isFree);
-    assert(block->next_phys == next_phys);
     phys_list_remove(block);
     free_list_remove(next_phys);
   }
 
   if (prev_phys && prev_phys->isFree) {
-    assert(block->isFree);
-    assert(prev_phys->next_phys == block);
     phys_list_remove(prev_phys);
     free_list_remove(block);
   }
@@ -72,15 +65,6 @@ void free_list_merge(block_t *block) {
 
 // will merge block->next to itself
 void phys_list_remove(block_t *block) {
-  assert(block);
-  assert(block->next_phys);
-  assert(block->isFree);
-  assert(block->next_phys->isFree);
-  assert(block->next_phys == (void *)block + sizeof(block_t) + block->size);
-  assert(block->next_phys->next_phys == NULL ||
-         block->next_phys->next_phys == (void *)block->next_phys +
-                                            block->next_phys->size +
-                                            sizeof(block_t));
   block->size += sizeof(block_t) + block->next_phys->size;
   if (block->next_phys != tail_block) {
     block->next_phys->next_phys->prev_phys = block;
@@ -88,8 +72,6 @@ void phys_list_remove(block_t *block) {
     tail_block = block;
   }
   block->next_phys = block->next_phys->next_phys;
-  assert(block->next_phys == NULL ||
-         block->next_phys == (void *)block + sizeof(block_t) + block->size);
 }
 
 /*
@@ -97,8 +79,6 @@ void phys_list_remove(block_t *block) {
  * 2. modify the adjacent block pointers
  */
 void free_list_remove(block_t *block) {
-  assert(block && head_block);
-
   block_t *prev_list = block->prev_list;
   block_t *next_list = block->next_list;
   block->prev_list = NULL;
@@ -119,8 +99,6 @@ void free_list_remove(block_t *block) {
  * 3. Return address of split part.
  */
 block_t *split(block_t *block, size_t size) {
-  assert(block && block->size >= size + sizeof(block_t));
-
   block_t *new_block = (void *)block + sizeof(block_t) +
                        (block->size - (sizeof(block_t) + size));
   new_block->isFree = 0;
@@ -129,9 +107,7 @@ block_t *split(block_t *block, size_t size) {
   new_block->next_list = NULL;
   new_block->prev_phys = block;
   new_block->next_phys = block->next_phys;
-  assert(new_block->next_phys == NULL ||
-         new_block->next_phys ==
-             (void *)new_block + sizeof(block_t) + new_block->size);
+
 
   if (block->next_phys)
     block->next_phys->prev_phys = new_block;
@@ -139,8 +115,6 @@ block_t *split(block_t *block, size_t size) {
   block->size -= sizeof(block_t) + size;
   if (new_block->next_phys == NULL)
     tail_block = new_block;
-  assert(block->next_phys == (void *)block + sizeof(block_t) + block->size);
-  assert(sbrk(0) == (void *)tail_block + sizeof(block_t) + tail_block->size);
   return new_block;
 }
 
@@ -154,8 +128,6 @@ block_t *request_memory(size_t size) {
   if (ptr == (void *)-1) {
     return NULL;
   }
-  assert(tail_block == NULL ||
-         ptr == (void *)tail_block + sizeof(block_t) + tail_block->size);
   data_segment_size += alloc_size;
   block_t *block = ptr;
   block->size = size;
@@ -166,7 +138,6 @@ block_t *request_memory(size_t size) {
   block->next_phys = NULL;
   if (tail_block) {
     tail_block->next_phys = block;
-    assert(block == (void *)tail_block + sizeof(block_t) + tail_block->size);
   }
   tail_block = block;
   return block;
@@ -176,7 +147,6 @@ block_t *request_memory(size_t size) {
  * 1. iterations to find one
  */
 block_t *find_ff(size_t size) {
-  assert(head_block);
   block_t *curr = head_block;
   while (curr) {
     if (curr->size >= size) {
@@ -187,7 +157,6 @@ block_t *find_ff(size_t size) {
   return NULL;
 }
 block_t *find_bf(size_t size) {
-  assert(head_block);
   block_t *optimal = NULL;
   block_t *curr = head_block;
   while (curr) {
