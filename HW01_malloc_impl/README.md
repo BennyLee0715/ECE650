@@ -4,40 +4,42 @@
 
 Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/requirement.pdf) for specific requirement.
 
-My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md)
+My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md). Please note my report was based on commit 8120e888bb1156a238871ea02031a4a7ac0532be. I added ALLOC_UNIT to further optimize this design, which is mentioned in [1.4 Further Improvements](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md#14-further-improvements). 
 
 ## Usage and Result
 
 Tests were ran on Duke virtual machine with Ubuntu 18.
+
+commit id: cad125082193953ffca183436df3de24f0713f43
 
 ```
 make
 cd alloc_policy_tests
 make
 
-# BF
-$ ./small_range_rand_allocs
-data_segment_size = 3915520, data_segment_free_space = 80016
-Execution Time = 0.512221 seconds
-Fragmentation  = 0.020436
-$ ./equal_size_allocs
-Execution Time = 3.513114 seconds
-Fragmentation  = 0.450000
-$ ./large_range_rand_allocs
-Execution Time = 97.019144 seconds
-Fragmentation  = 0.039970
-
 # FF
 $ ./small_range_rand_allocs
-data_segment_size = 4076160, data_segment_free_space = 329920
-Execution Time = 1.870334 seconds
-Fragmentation  = 0.080939
+data_segment_size = 4079616, data_segment_free_space = 331824
+Execution Time = 1.320798 seconds
+Fragmentation  = 0.081337
 $ ./equal_size_allocs
-Execution Time = 3.439875 seconds
-Fragmentation  = 0.450000
+Execution Time = 1.661197 seconds
+Fragmentation  = 0.456717
 $ ./large_range_rand_allocs
-Execution Time = 12.230138 seconds
-Fragmentation  = 0.114686
+Execution Time = 5.202420 seconds
+Fragmentation  = 0.113902
+
+# BF
+$ ./small_range_rand_allocs
+data_segment_size = 3919872, data_segment_free_space = 82352
+Execution Time = 0.364347 seconds
+Fragmentation  = 0.021009
+$ ./equal_size_allocs
+Execution Time = 1.656354 seconds
+Fragmentation  = 0.456717
+$ ./large_range_rand_allocs
+Execution Time = 40.058784 seconds
+Fragmentation  = 0.039797
 ```
 
 ## Tips

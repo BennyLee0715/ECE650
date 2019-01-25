@@ -12,6 +12,7 @@ void bf_free(void *ptr);
 unsigned long get_data_segment_size();
 long long get_data_segment_free_space_size(); // in bytes
 
+// Store Meta Information of a block
 typedef struct BlockInfo {
   size_t size;
   int isFree;
@@ -23,62 +24,43 @@ typedef struct BlockInfo {
 
 typedef block_t *(*FunType)(size_t);
 
+#ifndef ALLOC_UNIT
+#define ALLOC_UNIT 3 * sysconf(_SC_PAGESIZE)
+#endif
+
 // Customized functions
 
-/*
- * 1. check valid(NULL)
- * 2. remove from free list
- * 3. merge operation
- */
+// For two policies, we use the same free method here
 void _free(void *ptr);
 
-/*
- * 1. add to the front
- * 2. modify necessary pointers
- */
-void free_list_add(block_t *block);
+// Add a block to the front of the list
+void free_list_add_front(block_t *block);
 
-/*
- * 1. modify the isFree flag
- * 2. modify the adjacent block pointers
- */
+// Remove a block from list
 void free_list_remove(block_t *block);
 
-/*
- * 1. check whether it is free
- * 2. merge the size
- * 3. update pointers
- */
+// Megre adjacent free blocks around 'block'
 void free_list_merge(block_t *block);
 
-/*
- * 1. Modify the size of two blocks
- * 2. Modify phisical adjacent pointers
- * 3. Return address of split part.
- */
+// Split block into two, the meta of block still accounts for
+// free block, the rest part is regarded as malloced one.
 block_t *split(block_t *block, size_t size);
 
-/*
- * 1. call sbrk for memory allocation
- * TODO: further improvements with specific allocation unit
- */
+// call sbrk for memory allocation
 block_t *request_memory(size_t size);
 
-/*
- * 1. iterations to find one
- */
+// Different policies to find block
 block_t *find_ff(size_t size);
 block_t *find_bf(size_t size);
 
-/*
- * 1. check free list
- * 2. judge perfect block
- */
+// malloc space according to size and policy
 void *_malloc(size_t size, FunType fp);
 
-void phys_list_remove(block_t *block);
+// Merge block->next_phys into block, and form a greater one.
+void phys_list_merge_next(block_t *block);
 
 block_t *head_block = NULL; // linked list head
 block_t *tail_block = NULL; // physical list tail
+
 unsigned long data_segment_size = 0;
 long long data_segment_free_space_size = 0;
