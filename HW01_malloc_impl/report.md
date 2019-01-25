@@ -5,7 +5,7 @@
 
 ## 1. Overview of implementation
 
-For this assignment, I tried a lot of way on implementation and fixed lots of bugs. I will mention some of them, and explain the reasons. There would be multiple versions, but the **1.2 Basic Implementation with Free List** part is the implementation of my submission code. If necessary, graders can visit my [git repository](https://github.com/menyf/ECE650/tree/master/HW01_malloc_impl) and reset to previous commit to check the code, though some are bugy.
+For this assignment, I tried a lot of way on implementation and fixed lots of bugs. I will mention some of them, and explain the reasons. There would be multiple versions, but the **1.3 Random Sequence of Free list** part is the implementation of my submission code. If necessary, graders can visit my [git repository](https://github.com/menyf/ECE650_HW1_malloc_impl) and reset to previous commit to check the code, though some are bugy.
 
 ### 1.1 Simple Stimulation on Memory Allocation
 
@@ -61,13 +61,30 @@ For the coalesces operation, unlike the previous solution that checks `isFree` f
 
 Another really tricky thing is for best-fit policy. We need to judge whether we found the perfect block, if so, we could simply return it without keep iteration, which will greatly reduce time consumption.
 
-### 1.3 Further Improvements
+### 1.3 Random Sequence of Free list
 
-For this part, I thought of them and tried to implement but finally failed, graders can check git commit log for details if necessary.
+It is intuitive that we create the free list in an address-ascending way for first-fit policy. When it comes to best-fit, we may want the free list to be sorted by block size. It would lead to another question, how can we merge two blocks that hold the adjacent addresses?
+
+One way to address this is to add previous block that connects to it in terms of address(rather than connecting in linked list), we can create a new linked list with following data structure:
+
+```C
+typedef struct BlockInfo {
+  size_t size;
+  int isFree;
+  struct BlockInfo *next_phys;
+  struct BlockInfo *prev_phys;
+  struct BlockInfo *next_list;
+  struct BlockInfo *prev_list;
+} block_t;
+```
+
+The free list still consists of free blocks, but the difference with previous solution is that, it does not require to be sorted in address ascending way, we can simply insert the new free block at the beginning of the free list. With such data structure, we can use pointer arithmetic to calculate the next block in either physical connection or in free list connection. It only takes up `O(1)` for it. For the whole design, only when finding best-fit block and first-fit block would take `O(n)` time complexity, for the others all in `O(1)`.
+
+### 1.4 Further Improvements 
+
+For this part, I thought of it and tried to implement but finally failed, graders can check git commit log for details if necessary.
 
 When thinking of allocation, the most simple way would be call `sbrk()` once no reusable block available. However, `sbrk()` is a system call, which means it consumes a lot of time. Then I came up with the idea that we can allocate a large block, put the rest part into the free list, then for next allocation, we can find the applicable one at the end of the free list. Further, I thought of amortized analysis, like what applied to vector allocation, we can try to double the allocated space. I believe this is the most efficient way to call `sbrk()`. I tried to implement the way that allocate specific size of block, but finally I was running out of time and gave up on it.
-
-It is intuitive that we create the free list in an address-ascending way for first-fit policy. When it comes to best-fit, we may want the free list to be sorted by block size. It would lead to another question, how can we merge two blocks that hold the adjacent addresses. One way to solve this is to add previous block that connects to it in terms of address(rather than connecting in linked list), we can put the greatest or latest one at the beginning of linked list. 
 
 
 ## 2. Result & Analysis
@@ -76,9 +93,9 @@ Here are my results:
 
 | Pattern | First-Fit<Br>Exec Time | First-Fit<Br>Fragmentation | Best-Fit<Br>Exec Time | Best-Fit<Br>Fragmentation |
 | --- | --- | --- | --- | --- |
-| Equal | 18.9s | 0.45 | 19.2s | 0.45 |
-| Small | 17.0s | 0.075 | 5.6s | 0.02 |
-| Large | 109.2s | 0.09 | 137.8s | 0.04 |
+| Equal | 3.4s | 0.45 | 3.5s | 0.45 |
+| Small | 1.87s | 0.08 | 0.51s | 0.02 |
+| Large | 12.2s | 0.11 | 97.02s | 0.04 |
 
 
 For `equal_size_allocs`, the size of block is fixed at 128B, so every block in the free list is the same, each time, it takes the front block as in either way. From the memory perspective, these two ways do exactly the same thing, so the time is pretty close. For fragmentation, it is obviously the same since it is calculated halfway, around 0.5.
@@ -99,3 +116,4 @@ In the `Makefile`, it used `-O3` flag, which makes debugging really difficult. H
 
 ### 3.2 Abstraction
 For the two policies, I thought the difference between the two. I think the only different is how to search for fit block. I declared a function pointer whose return value is a `block_t *`, indicating the block to be malloced. And for free part, there is no difference between these two policies in my design. I think this is a good instance for abstraction in C, greatly reduced redolent code.
+

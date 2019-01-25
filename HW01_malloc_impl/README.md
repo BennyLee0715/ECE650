@@ -14,26 +14,30 @@ Tests were ran on Duke virtual machine with Ubuntu 18.
 make
 cd alloc_policy_tests
 make
-# FF
-~ $ ./small_range_rand_allocs
-Execution Time = 17.032398 seconds
-Fragmentation  = 0.075614
-~ $ ./equal_size_allocs
-Execution Time = 18.925215 seconds
-Fragmentation  = 0.450000
-~ $ ./large_range_rand_allocs
-Execution Time = 109.246684 seconds
-Fragmentation  = 0.094561
+
 # BF
-~ $ ./small_range_rand_allocs
-Execution Time = 5.557294 seconds
-Fragmentation  = 0.027893
-~ $ ./equal_size_allocs
-Execution Time = 19.260199 seconds
+$ ./small_range_rand_allocs
+data_segment_size = 3915520, data_segment_free_space = 80016
+Execution Time = 0.512221 seconds
+Fragmentation  = 0.020436
+$ ./equal_size_allocs
+Execution Time = 3.513114 seconds
 Fragmentation  = 0.450000
-~ $ ./large_range_rand_allocs
-Execution Time = 137.826278 seconds
-Fragmentation  = 0.040785
+$ ./large_range_rand_allocs
+Execution Time = 97.019144 seconds
+Fragmentation  = 0.039970
+
+# FF
+$ ./small_range_rand_allocs
+data_segment_size = 4076160, data_segment_free_space = 329920
+Execution Time = 1.870334 seconds
+Fragmentation  = 0.080939
+$ ./equal_size_allocs
+Execution Time = 3.439875 seconds
+Fragmentation  = 0.450000
+$ ./large_range_rand_allocs
+Execution Time = 12.230138 seconds
+Fragmentation  = 0.114686
 ```
 
 ## Tips
