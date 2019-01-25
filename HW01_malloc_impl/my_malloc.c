@@ -20,7 +20,7 @@ void _free(void *ptr) {
   if (ptr == NULL)
     return;
   block_t *block = ptr - sizeof(block_t);
-  data_segment_free_space_size += block->size + sizeof(block_t);
+  // data_segment_free_space_size += block->size + sizeof(block_t);
   free_list_add_front(block);
   free_list_merge(block);
 }
@@ -28,6 +28,7 @@ void _free(void *ptr) {
 // Add a block to the front of the list
 void free_list_add_front(block_t *block) {
   assert(block && block->isFree == 0);
+  data_segment_free_space_size += block->size + sizeof(block_t);
   block->isFree = 1;
   block->next_list = head_block;
   if (head_block)
@@ -137,7 +138,9 @@ block_t *split(block_t *block, size_t size) {
  * TODO: further improvements with specific allocation unit
  */
 block_t *request_memory(size_t size) {
-  size_t alloc_size = size + sizeof(block_t);
+  size_t alloc_size = size + 2 * sizeof(block_t) > ALLOC_UNIT
+                          ? size + sizeof(block_t)
+                          : ALLOC_UNIT;
   void *ptr = sbrk(alloc_size);
   if (ptr == (void *)-1) {
     return NULL;
@@ -151,12 +154,25 @@ block_t *request_memory(size_t size) {
   block->prev_list = NULL;
   block->next_list = NULL;
   block->prev_phys = tail_block;
-  block->next_phys = NULL;
   if (tail_block) {
     tail_block->next_phys = block;
     assert(block == (void *)tail_block + sizeof(block_t) + tail_block->size);
   }
-  tail_block = block;
+  if (alloc_size == ALLOC_UNIT) {
+    block_t *free_block = ptr + sizeof(block_t) + size;
+    free_block->isFree = 0;
+    free_block->size = alloc_size - (sizeof(block_t) * 2 + size);
+    free_block->prev_list = NULL;
+    free_block->next_list = NULL;
+    free_block->prev_phys = block;
+    free_block->next_phys = NULL;
+    block->next_phys = free_block;
+    tail_block = free_block;
+    free_list_add_front(free_block);
+  } else {
+    block->next_phys = NULL;
+    tail_block = block;
+  }
   return block;
 }
 
