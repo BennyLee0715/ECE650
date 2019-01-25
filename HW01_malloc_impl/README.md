@@ -4,7 +4,7 @@
 
 Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/requirement.pdf) for specific requirement.
 
-My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md). Please note my report was based on commit 8120e888bb1156a238871ea02031a4a7ac0532be. I added ALLOC_UNIT to further optimize this design, which is mentioned in [2.4 Further Improvements](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md#14-further-improvements). 
+My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md). Please note my report was based on commit 8120e888bb1156a238871ea02031a4a7ac0532be. I added ALLOC_UNIT to further optimize this design, which is mentioned in [1.4 Further Improvements](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md#14-further-improvements). 
 
 ## Usage and Result
 
