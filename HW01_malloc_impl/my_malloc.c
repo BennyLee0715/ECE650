@@ -49,7 +49,7 @@ void free_list_merge(block_t *block) {
   if (next_phys && next_phys->isFree) {
     assert(block->isFree);
     assert(block->next_phys == next_phys);
-    phys_list_remove(block);
+    phys_list_merge_next(block);
     free_list_remove(next_phys);
   }
 
@@ -58,7 +58,7 @@ void free_list_merge(block_t *block) {
   if (prev_phys && prev_phys->isFree) {
     assert(block->isFree);
     assert(prev_phys->next_phys == block);
-    phys_list_remove(prev_phys);
+    phys_list_merge_next(prev_phys);
     free_list_remove(block);
   }
 }

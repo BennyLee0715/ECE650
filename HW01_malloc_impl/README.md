@@ -15,29 +15,29 @@ make
 cd alloc_policy_tests
 make
 
-# BF
-$ ./small_range_rand_allocs
-data_segment_size = 3915520, data_segment_free_space = 80016
-Execution Time = 0.512221 seconds
-Fragmentation  = 0.020436
-$ ./equal_size_allocs
-Execution Time = 3.513114 seconds
-Fragmentation  = 0.450000
-$ ./large_range_rand_allocs
-Execution Time = 97.019144 seconds
-Fragmentation  = 0.039970
-
 # FF
-$ ./small_range_rand_allocs
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./small_range_rand_allocs
 data_segment_size = 4076160, data_segment_free_space = 329920
-Execution Time = 1.870334 seconds
+Execution Time = 1.745480 seconds
 Fragmentation  = 0.080939
-$ ./equal_size_allocs
-Execution Time = 3.439875 seconds
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./equal_size_allocs
+Execution Time = 1.781792 seconds
 Fragmentation  = 0.450000
-$ ./large_range_rand_allocs
-Execution Time = 12.230138 seconds
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./large_range_rand_allocs
+Execution Time = 12.323683 seconds
 Fragmentation  = 0.114686
+
+# BF
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./small_range_rand_allocs
+data_segment_size = 3915520, data_segment_free_space = 80016
+Execution Time = 0.366520 seconds
+Fragmentation  = 0.020436
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./equal_size_allocs
+Execution Time = 1.796241 seconds
+Fragmentation  = 0.450000
+vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./large_range_rand_allocs
+Execution Time = 93.784540 seconds
+Fragmentation  = 0.039970
 ```
 
 ## Tips
