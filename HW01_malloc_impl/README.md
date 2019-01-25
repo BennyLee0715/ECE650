@@ -4,11 +4,13 @@
 
 Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/requirement.pdf) for specific requirement.
 
-My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md)
+My report for this assignment is available at [report.md](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md). Please note my report was based on commit 8120e888bb1156a238871ea02031a4a7ac0532be. I added ALLOC_UNIT to further optimize this design, which is mentioned in [2.4 Further Improvements](https://github.com/menyf/ECE650/blob/master/HW01_malloc_impl/report.md#14-further-improvements). 
 
 ## Usage and Result
 
 Tests were ran on Duke virtual machine with Ubuntu 18.
+
+commit id: cad125082193953ffca183436df3de24f0713f43
 
 ```
 make
@@ -16,28 +18,28 @@ cd alloc_policy_tests
 make
 
 # FF
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./small_range_rand_allocs
-data_segment_size = 4076160, data_segment_free_space = 329920
-Execution Time = 1.745480 seconds
-Fragmentation  = 0.080939
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./equal_size_allocs
-Execution Time = 1.781792 seconds
-Fragmentation  = 0.450000
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./large_range_rand_allocs
-Execution Time = 12.323683 seconds
-Fragmentation  = 0.114686
+$ ./small_range_rand_allocs
+data_segment_size = 4079616, data_segment_free_space = 331824
+Execution Time = 1.320798 seconds
+Fragmentation  = 0.081337
+$ ./equal_size_allocs
+Execution Time = 1.661197 seconds
+Fragmentation  = 0.456717
+$ ./large_range_rand_allocs
+Execution Time = 5.202420 seconds
+Fragmentation  = 0.113902
 
 # BF
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./small_range_rand_allocs
-data_segment_size = 3915520, data_segment_free_space = 80016
-Execution Time = 0.366520 seconds
-Fragmentation  = 0.020436
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./equal_size_allocs
-Execution Time = 1.796241 seconds
-Fragmentation  = 0.450000
-vcm@vcm-8126:~/ece650/HW01_malloc_impl/alloc_policy_tests$ ./large_range_rand_allocs
-Execution Time = 93.784540 seconds
-Fragmentation  = 0.039970
+$ ./small_range_rand_allocs
+data_segment_size = 3919872, data_segment_free_space = 82352
+Execution Time = 0.364347 seconds
+Fragmentation  = 0.021009
+$ ./equal_size_allocs
+Execution Time = 1.656354 seconds
+Fragmentation  = 0.456717
+$ ./large_range_rand_allocs
+Execution Time = 40.058784 seconds
+Fragmentation  = 0.039797
 ```
 
 ## Tips
