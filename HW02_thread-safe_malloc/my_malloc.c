@@ -43,7 +43,7 @@ void free_list_merge(block_t *block) {
 
   block_t *prev_phys = block->prev_phys;
   block_t *next_phys = block->next_phys;
-  assert(prev_phys == NULL || prev_phys->next_phys == block);
+  //  assert(prev_phys == NULL || prev_phys->next_phys == block);
 
   // Merge next to current block if possible
   // physically connected
@@ -51,7 +51,8 @@ void free_list_merge(block_t *block) {
       (void *)next_phys == (void *)block + sizeof(block_t) + block->size) {
     assert(block->isFree);
     assert(block->next_phys == next_phys);
-    phys_list_merge_next(block);
+    if (tail_block) // Updated: avoid merge in main thread.
+      phys_list_merge_next(block);
     free_list_remove(next_phys);
   }
 
@@ -61,7 +62,8 @@ void free_list_merge(block_t *block) {
       (void *)block == (void *)prev_phys + sizeof(block_t) + prev_phys->size) {
     assert(block->isFree);
     assert(prev_phys->next_phys == block);
-    phys_list_merge_next(prev_phys);
+    if (tail_block) // Updated: avoid merge in main thread.
+      phys_list_merge_next(prev_phys);
     free_list_remove(block);
   }
 }
@@ -78,8 +80,7 @@ void phys_list_merge_next(block_t *block) {
   /* block->next_phys->size + */
   /* sizeof(block_t)); */
   block->size += sizeof(block_t) + block->next_phys->size;
-  if (block->next_phys !=
-      tail_block) { // if block->next_phys is not the last one
+  if (block->next_phys->next_phys) { // if block->next_phys is not the last one
     block->next_phys->next_phys->prev_phys = block;
   } else { // block->next_phys is the last one on heap
     tail_block = block;
