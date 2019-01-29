@@ -1,5 +1,7 @@
+#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
+
 // First Fit malloc/free
 void *ff_malloc(size_t size);
 void ff_free(void *ptr);
@@ -59,17 +61,31 @@ void *_malloc(size_t size, FunType fp);
 // Merge block->next_phys into block, and form a greater one.
 void phys_list_merge_next(block_t *block);
 
-block_t *head_block = NULL; // linked list head
-block_t *tail_block = NULL; // physical list tail
+//#ifdef LOCK_VERSION
+// block_t *head_block = NULL; // linked list head
+// block_t *tail_block = NULL; // physical list tail
+//#else
+__thread block_t *head_block = NULL; // linked list head
+__thread block_t *tail_block = NULL; // physical list tail
+//#endif
 
 unsigned long data_segment_size = 0;
 long long data_segment_free_space_size = 0;
 // Inplemented in HW01 **************************************************
 
-//Thread Safe malloc/free: locking version
+// Thread Safe malloc/free: locking version
 void *ts_malloc_lock(size_t size);
 void ts_free_lock(void *ptr);
 
-//Thread Safe malloc/free: non-locking version
+// Thread Safe malloc/free: non-locking version
 void *ts_malloc_nolock(size_t size);
 void ts_free_nolock(void *ptr);
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// call sbrk for memory allocation with lock only on sbrk
+block_t *request_memory_nolock(size_t size);
+
+// init block
+void set_block(block_t *block, size_t size, int isFree, block_t *prev_phys,
+               block_t *next_phys, block_t *prev_list, block_t *next_list);
