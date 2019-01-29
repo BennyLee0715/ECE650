@@ -20,7 +20,6 @@ void _free(void *ptr) {
   if (ptr == NULL)
     return;
   block_t *block = ptr - sizeof(block_t);
-  // data_segment_free_space_size += block->size + sizeof(block_t);
   free_list_add_front(block);
   free_list_merge(block);
 }
