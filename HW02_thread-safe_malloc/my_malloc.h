@@ -62,11 +62,11 @@ void *_malloc(size_t size, FunType fp);
 void phys_list_merge_next(block_t *block);
 
 //#ifdef LOCK_VERSION
-// block_t *head_block = NULL; // linked list head
-// block_t *tail_block = NULL; // physical list tail
+block_t *head_block = NULL; // linked list head
+block_t *tail_block = NULL; // physical list tail
 //#else
-__thread block_t *head_block = NULL; // linked list head
-__thread block_t *tail_block = NULL; // physical list tail
+//__thread block_t *head_block = NULL; // linked list head
+//__thread block_t *tail_block = NULL; // physical list tail
 //#endif
 
 unsigned long data_segment_size = 0;

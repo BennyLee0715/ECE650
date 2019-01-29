@@ -234,47 +234,16 @@ void *_malloc(size_t size, FunType fp) {
 // Inplemented in HW01 **************************************************
 // best fit policy adopted.
 void *ts_malloc_lock(size_t size) {
-  if (pthread_mutex_lock(&lock) != 0) {
-    fprintf(stdout, "lock error in malloc!\n");
-  }
-  void *ptr = NULL;
-  if (head_block == NULL) {
-    // No free block available
-    block_t *block = request_memory(size);
-    ptr = block == NULL ? NULL : block + 1;
-  } else {
-    block_t *block = find_bf(size);
-    if (block == NULL) {
-      // no suitable found in free list
-      // request new space
-      block = request_memory(size);
-      ptr = block == NULL ? NULL : (block + 1);
-    } else if (block->size <= size + sizeof(block_t)) {
-      // Perfect block found
-      data_segment_free_space_size -= block->size + sizeof(block_t);
-      free_list_remove(block);
-      ptr = block + 1;
-    } else {
-      // found a block which is large enough to become two.
-      data_segment_free_space_size -= size + sizeof(block_t);
-      block_t *new_block = split(block, size);
-      ptr = new_block + 1;
-    }
-  }
-  if (pthread_mutex_unlock(&lock) != 0) {
-    fprintf(stdout, "unlock error in malloc!\n");
-  }
+  assert(pthread_mutex_lock(&lock) == 0);
+  void *ptr = _malloc(size, find_bf);
+  assert(pthread_mutex_unlock(&lock) == 0);
   return ptr;
 }
 
 void ts_free_lock(void *ptr) {
-  if (pthread_mutex_lock(&lock) != 0) {
-    fprintf(stdout, "lock error in free!\n");
-  }
+  assert(pthread_mutex_lock(&lock) == 0);
   _free(ptr);
-  if (pthread_mutex_unlock(&lock) != 0) {
-    fprintf(stdout, "unlock error in free!\n");
-  }
+  assert(pthread_mutex_unlock(&lock) == 0);
 }
 
 void *ts_malloc_nolock(size_t size) {
