@@ -20,6 +20,8 @@ void _free(void *ptr) {
   if (ptr == NULL)
     return;
   block_t *block = ptr - sizeof(block_t);
+  if (block->isFree)
+    return;
   free_list_add_front(block);
   free_list_merge(block);
 }
@@ -42,7 +44,7 @@ void free_list_merge(block_t *block) {
 
   block_t *prev_phys = block->prev_phys;
   block_t *next_phys = block->next_phys;
-  //  assert(prev_phys == NULL || prev_phys->next_phys == block);
+  assert(prev_phys == NULL || prev_phys->next_phys == block);
 
   // Merge next to current block if possible
   // physically connected
@@ -50,8 +52,7 @@ void free_list_merge(block_t *block) {
       (void *)next_phys == (void *)block + sizeof(block_t) + block->size) {
     assert(block->isFree);
     assert(block->next_phys == next_phys);
-    if (tail_block) // Updated: avoid merge in main thread.
-      phys_list_merge_next(block);
+    phys_list_merge_next(block);
     free_list_remove(next_phys);
   }
 
@@ -61,8 +62,7 @@ void free_list_merge(block_t *block) {
       (void *)block == (void *)prev_phys + sizeof(block_t) + prev_phys->size) {
     assert(block->isFree);
     assert(prev_phys->next_phys == block);
-    if (tail_block) // Updated: avoid merge in main thread.
-      phys_list_merge_next(prev_phys);
+    phys_list_merge_next(prev_phys);
     free_list_remove(block);
   }
 }
@@ -73,15 +73,18 @@ void phys_list_merge_next(block_t *block) {
   // assert(block->next_phys);
   // assert(block->isFree);
   // assert(block->next_phys->isFree);
-  // assert(block->next_phys == (void *)block + sizeof(block_t) + block->size);
-  // assert(block->next_phys->next_phys == NULL ||
+  // assert(block->next_phys == (void *)block + sizeof(block_t) +
+  // block->size); assert(block->next_phys->next_phys == NULL ||
   /* block->next_phys->next_phys == (void *)block->next_phys + */
   /* block->next_phys->size + */
   /* sizeof(block_t)); */
   block->size += sizeof(block_t) + block->next_phys->size;
   if (block->next_phys->next_phys) { // if block->next_phys is not the last one
     block->next_phys->next_phys->prev_phys = block;
-  } else { // block->next_phys is the last one on heap
+  }
+  else if (tail_block) {
+    // Updated: avoid merge in main thread.
+    // block->next_phys is the last one on heap
     tail_block = block;
   }
   block->next_phys = block->next_phys->next_phys;
@@ -117,18 +120,12 @@ block_t *split(block_t *block, size_t size) {
                        (block->size - (sizeof(block_t) + size));
   set_block(new_block, size, 0, block, block->next_phys, NULL, NULL);
 
-  // assert(new_block->next_phys == NULL ||
-  /* new_block->next_phys == */
-  /* (void *)new_block + sizeof(block_t) + new_block->size); */
-
   if (block->next_phys)
     block->next_phys->prev_phys = new_block;
   block->next_phys = new_block;
   block->size -= sizeof(block_t) + size;
   if (new_block->next_phys == NULL)
     tail_block = new_block;
-  // assert(block->next_phys == (void *)block + sizeof(block_t) +
-  // block->size);
   return new_block;
 }
 
@@ -160,7 +157,8 @@ block_t *request_memory(size_t size) {
     block->next_phys = free_block;
     tail_block = free_block;
     free_list_add_front(free_block);
-  } else {
+  }
+  else {
     block->next_phys = NULL;
     tail_block = block;
   }
@@ -192,7 +190,8 @@ block_t *find_bf(size_t size) {
       if (optimal == NULL || curr->size < optimal->size) {
         optimal = curr;
       }
-    } else if (curr->size >= size) {
+    }
+    else if (curr->size >= size) {
       // A perfect block found
       return curr;
     }
@@ -210,19 +209,22 @@ void *_malloc(size_t size, FunType fp) {
     // No free block available
     block_t *block = request_memory(size);
     return block == NULL ? NULL : block + 1;
-  } else {
+  }
+  else {
     block_t *block = (*fp)(size);
     if (block == NULL) {
       // no suitable found in free list
       // request new space
       block = request_memory(size);
       return block == NULL ? NULL : (block + 1);
-    } else if (block->size <= size + sizeof(block_t)) {
+    }
+    else if (block->size <= size + sizeof(block_t)) {
       // Perfect block found
       data_segment_free_space_size -= block->size + sizeof(block_t);
       free_list_remove(block);
       return block + 1;
-    } else {
+    }
+    else {
       // found a block which is large enough to become two.
       data_segment_free_space_size -= size + sizeof(block_t);
       block_t *new_block = split(block, size);
@@ -252,19 +254,22 @@ void *ts_malloc_nolock(size_t size) {
     // No free block available
     block_t *block = request_memory_nolock(size);
     ptr = block == NULL ? NULL : block + 1;
-  } else {
+  }
+  else {
     block_t *block = find_bf(size);
     if (block == NULL) {
       // no suitable found in free list
       // request new space
       block = request_memory_nolock(size);
       ptr = block == NULL ? NULL : (block + 1);
-    } else if (block->size <= size + sizeof(block_t)) {
+    }
+    else if (block->size <= size + sizeof(block_t)) {
       // Perfect block found
       data_segment_free_space_size -= block->size + sizeof(block_t);
       free_list_remove(block);
       ptr = block + 1;
-    } else {
+    }
+    else {
       // found a block which is large enough to become two.
       data_segment_free_space_size -= size + sizeof(block_t);
       block_t *new_block = split(block, size);
@@ -308,7 +313,8 @@ block_t *request_memory_nolock(size_t size) {
     block->next_phys = free_block;
     tail_block = free_block;
     free_list_add_front(free_block);
-  } else {
+  }
+  else {
     block->next_phys = NULL;
     tail_block = block;
   }
