@@ -66,19 +66,40 @@ void free_list_remove(block_t *block, block_t **head_block) {
 void free_list_merge(block_t *block, block_t **head_block,
                      block_t **tail_block) {
   assert(block && block->isFree);
-  if (block->next_phys && block->next_phys->isFree &&
-      (void *)block + sizeof(block_t) + block->size == block->next_phys) {
-    block_t *temp = block->next_phys;
+
+  block_t *prev_phys = block->prev_phys;
+  block_t *next_phys = block->next_phys;
+  if (next_phys && next_phys->isFree &&
+      (void *)block + sizeof(block_t) + block->size == next_phys) {
+    assert((void *)block + sizeof(block_t) + block->size == next_phys);
+    assert(next_phys->prev_phys == block); // assertion occurs here
+    free_list_remove(next_phys, head_block);
     phys_list_merge_next(block, tail_block);
-    free_list_remove(temp, head_block);
   }
 
-  if (block->prev_phys && block->prev_phys->isFree &&
-      (void *)block->prev_phys + sizeof(block_t) + block->prev_phys->size ==
-          block) {
-    phys_list_merge_next(block->prev_phys, tail_block);
+  if (prev_phys && prev_phys->isFree &&
+      (void *)prev_phys + sizeof(block_t) + prev_phys->size == block) {
+    assert((void *)prev_phys + sizeof(block_t) + prev_phys->size == block);
+    assert(prev_phys->next_phys == block); // assertion occurs here
     free_list_remove(block, head_block);
+    phys_list_merge_next(prev_phys, tail_block);
   }
+}
+
+// Merge block->next_phys into block, and form a greater one.
+void phys_list_merge_next(block_t *block, block_t **tail_block) {
+  assert(block && block->next_phys);
+  block_t *next_block = block->next_phys;
+  // assert((void *)block + sizeof(block_t) + block->size == next_block);
+  // assert(block->isFree && next_block->isFree);
+  block->size += sizeof(block_t) + next_block->size;
+  if (next_block->next_phys) {
+    next_block->next_phys->prev_phys = block;
+  }
+  else if (*tail_block) {
+    *tail_block = block;
+  }
+  block->next_phys = next_block->next_phys;
 }
 
 // Split block into two, the meta of block still accounts for
@@ -86,6 +107,7 @@ void free_list_merge(block_t *block, block_t **head_block,
 block_t *split(block_t *block, size_t size, block_t **tail_block) {
   assert(block && *tail_block && block->size >= sizeof(block_t) + size);
   size_t rest_size = block->size - sizeof(block_t) - size;
+  assert(rest_size > 0);
   block_t *new_block = (void *)block + sizeof(block_t) + rest_size;
   set_block(new_block, size, 0, block, block->next_phys, NULL, NULL);
   if (block->next_phys) {
@@ -96,6 +118,7 @@ block_t *split(block_t *block, size_t size, block_t **tail_block) {
   }
   block->next_phys = new_block;
   block->size = rest_size;
+  assert((void *)block + block->size + sizeof(block_t) == new_block);
   return new_block;
 }
 
@@ -106,7 +129,9 @@ block_t *request_memory(size_t size, FunType fp, block_t **head_block,
   size_t alloc_size = (size + 2 * sizeof(block_t)) > ALLOC_UNIT
                           ? (size + sizeof(block_t))
                           : ALLOC_UNIT;
-  void *ptr = (*fp)(alloc_size);
+
+  // size_t alloc_size = size + sizeof(block_t);
+  void *ptr = (*fp)(alloc_size); // sbrk call
   if (ptr == (void *)-1) return NULL;
 
   block_t *block = ptr;
@@ -115,6 +140,7 @@ block_t *request_memory(size_t size, FunType fp, block_t **head_block,
     (*tail_block)->next_phys = block;
   }
   if (alloc_size == ALLOC_UNIT) {
+    // assert(0); // Assume we never use ALLOC_UNIT optimization for debugging.
     block_t *free_block = ptr + sizeof(block_t) + size;
     set_block(free_block, alloc_size - (sizeof(block_t) * 2 + size), 0, block,
               NULL, NULL, NULL);
@@ -180,22 +206,6 @@ void *_malloc(size_t size, FunType fp, block_t **head_block,
       return new_block + 1;
     }
   }
-}
-
-// Merge block->next_phys into block, and form a greater one.
-void phys_list_merge_next(block_t *block, block_t **tail_block) {
-  assert(block && block->next_phys);
-  assert((void *)block + sizeof(block_t) + block->size == block->next_phys);
-  block_t *next_block = block->next_phys;
-  assert(block->isFree && next_block->isFree);
-  block->size += sizeof(block_t) + block->next_phys->size;
-  if (next_block->next_phys) {
-    next_block->next_phys->prev_phys = block;
-  }
-  else if (*tail_block) {
-    *tail_block = block;
-  }
-  block->next_phys = next_block->next_phys;
 }
 
 // init block
