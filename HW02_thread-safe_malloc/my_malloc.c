@@ -1,189 +1,147 @@
 #include "my_malloc.h"
 #include "assert.h"
 
-// First Fit malloc/free
-void *ff_malloc(size_t size) { return _malloc(size, find_ff); }
-void ff_free(void *ptr) { _free(ptr); }
-
-// Best Fit malloc/free
-void *bf_malloc(size_t size) { return _malloc(size, find_bf); }
-void bf_free(void *ptr) { _free(ptr); }
-
-// Performance study
-unsigned long get_data_segment_size() { return data_segment_size; }
-long long get_data_segment_free_space_size() {
-  return data_segment_free_space_size;
+// Thread Safe malloc/free: locking version
+void *ts_malloc_lock(size_t size) {
+  assert(pthread_mutex_lock(&lock) == 0);
+  void *ptr = _malloc(size, sbrk, &head_block_lock, &tail_block_lock);
+  assert(pthread_mutex_unlock(&lock) == 0);
+  return ptr;
 }
 
-// For two policies, we use the same free method here
-void _free(void *ptr) {
-  if (ptr == NULL)
-    return;
-  block_t *block = ptr - sizeof(block_t);
-  if (block->isFree)
-    return;
-  free_list_add_front(block);
-  free_list_merge(block);
+void ts_free_lock(void *ptr) {
+  assert(pthread_mutex_lock(&lock) == 0);
+  _free(ptr, &head_block_lock, &tail_block_lock);
+  assert(pthread_mutex_unlock(&lock) == 0);
+}
+
+// Thread Safe malloc/free: non-locking version
+void *ts_malloc_nolock(size_t size) {
+  void *ptr = _malloc(size, sbrk_lock, &head_block_tls, &tail_block_tls);
+  return ptr;
+}
+
+void ts_free_nolock(void *ptr) {
+  _free(ptr, &head_block_tls, &tail_block_tls);
+}
+
+void _free(void *ptr, block_t **head_block, block_t **tail_block) {
+  if (ptr == NULL) return;
+  block_t *block = (block_t *)ptr - 1;
+  if (block->isFree) return;
+  free_list_add_front(block, head_block);
+  free_list_merge(block, head_block, tail_block);
 }
 
 // Add a block to the front of the list
-void free_list_add_front(block_t *block) {
-  assert(block && block->isFree == 0);
-  data_segment_free_space_size += block->size + sizeof(block_t);
-  block->isFree = 1;
-  block->next_list = head_block;
-  if (head_block)
-    head_block->prev_list = block;
-  head_block = block;
-}
-
-// Megre adjacent free blocks around 'block'
-void free_list_merge(block_t *block) {
+void free_list_add_front(block_t *block, block_t **head_block) {
   assert(block);
-  assert(block->isFree);
-
-  block_t *prev_phys = block->prev_phys;
-  block_t *next_phys = block->next_phys;
-  assert(prev_phys == NULL || prev_phys->next_phys == block);
-
-  // Merge next to current block if possible
-  // physically connected
-  if (next_phys && next_phys->isFree &&
-      (void *)next_phys == (void *)block + sizeof(block_t) + block->size) {
-    assert(block->isFree);
-    assert(block->next_phys == next_phys);
-    phys_list_merge_next(block);
-    free_list_remove(next_phys);
+  block->isFree = 1;
+  if (*head_block) {
+    (*head_block)->prev_list = block;
   }
-
-  // Merge current block to its previous one if possible
-  // physically connected
-  if (prev_phys && prev_phys->isFree &&
-      (void *)block == (void *)prev_phys + sizeof(block_t) + prev_phys->size) {
-    assert(block->isFree);
-    assert(prev_phys->next_phys == block);
-    phys_list_merge_next(prev_phys);
-    free_list_remove(block);
-  }
-}
-
-// will merge block->next to itself
-void phys_list_merge_next(block_t *block) {
-  // assert(block);
-  // assert(block->next_phys);
-  // assert(block->isFree);
-  // assert(block->next_phys->isFree);
-  // assert(block->next_phys == (void *)block + sizeof(block_t) +
-  // block->size); assert(block->next_phys->next_phys == NULL ||
-  /* block->next_phys->next_phys == (void *)block->next_phys + */
-  /* block->next_phys->size + */
-  /* sizeof(block_t)); */
-  block->size += sizeof(block_t) + block->next_phys->size;
-  if (block->next_phys->next_phys) { // if block->next_phys is not the last one
-    block->next_phys->next_phys->prev_phys = block;
-  }
-  else if (tail_block) {
-    // Updated: avoid merge in main thread.
-    // block->next_phys is the last one on heap
-    tail_block = block;
-  }
-  block->next_phys = block->next_phys->next_phys;
-  // assert(block->next_phys == NULL ||
-  /* block->next_phys == (void *)block + sizeof(block_t) + block->size); */
+  block->next_list = *head_block;
+  *head_block = block;
+  block->prev_list = NULL; // should be redaudent.
 }
 
 // Remove a block from list
-void free_list_remove(block_t *block) {
-  // assert(block && head_block);
-
-  block_t *prev_list = block->prev_list;
-  block_t *next_list = block->next_list;
-  block->prev_list = NULL;
-  block->next_list = NULL;
+void free_list_remove(block_t *block, block_t **head_block) {
+  assert(block);
   block->isFree = 0;
-  if (prev_list)
-    prev_list->next_list = next_list;
-  else
-    head_block = next_list;
+  if (block->prev_list) {
+    block->prev_list->next_list = block->next_list;
+  }
+  else {
+    *head_block = block->next_list;
+  }
+  if (block->next_list) {
+    block->next_list->prev_list = block->prev_list;
+  }
+  block->next_list = NULL;
+  block->prev_list = NULL;
+}
 
-  if (next_list)
-    next_list->prev_list = prev_list;
+// Megre adjacent free blocks around 'block'
+void free_list_merge(block_t *block, block_t **head_block,
+                     block_t **tail_block) {
+  assert(block && block->isFree);
+  if (block->next_phys && block->next_phys->isFree &&
+      (void *)block + sizeof(block_t) + block->size == block->next_phys) {
+    block_t *temp = block->next_phys;
+    phys_list_merge_next(block, tail_block);
+    free_list_remove(temp, head_block);
+  }
+
+  if (block->prev_phys && block->prev_phys->isFree &&
+      (void *)block->prev_phys + sizeof(block_t) + block->prev_phys->size ==
+          block) {
+    phys_list_merge_next(block->prev_phys, tail_block);
+    free_list_remove(block, head_block);
+  }
 }
 
 // Split block into two, the meta of block still accounts for
 // free block, the rest part is regarded as malloced one.
-block_t *split(block_t *block, size_t size) {
-  // assert(block && block->size >= size + sizeof(block_t));
-
-  // constructing the new block which is not free
-  block_t *new_block = (void *)block + sizeof(block_t) +
-                       (block->size - (sizeof(block_t) + size));
+block_t *split(block_t *block, size_t size, block_t **tail_block) {
+  assert(block && *tail_block && block->size >= sizeof(block_t) + size);
+  size_t rest_size = block->size - sizeof(block_t) - size;
+  block_t *new_block = (void *)block + sizeof(block_t) + rest_size;
   set_block(new_block, size, 0, block, block->next_phys, NULL, NULL);
-
-  if (block->next_phys)
+  if (block->next_phys) {
     block->next_phys->prev_phys = new_block;
+  }
+  else if (*tail_block) {
+    *tail_block = new_block;
+  }
   block->next_phys = new_block;
-  block->size -= sizeof(block_t) + size;
-  if (new_block->next_phys == NULL)
-    tail_block = new_block;
+  block->size = rest_size;
   return new_block;
 }
 
-/*
- * 1. call sbrk for memory allocation
- */
-block_t *request_memory(size_t size) {
-  size_t alloc_size = size + 2 * sizeof(block_t) > ALLOC_UNIT
-                          ? size + sizeof(block_t)
+// call sbrk for memory allocation
+block_t *request_memory(size_t size, FunType fp, block_t **head_block,
+                        block_t **tail_block) {
+  if (size <= 0) return NULL;
+  size_t alloc_size = (size + 2 * sizeof(block_t)) > ALLOC_UNIT
+                          ? (size + sizeof(block_t))
                           : ALLOC_UNIT;
-  void *ptr = sbrk(alloc_size);
-  if (ptr == (void *)-1) {
-    return NULL;
-  }
-  // assert(tail_block == NULL ||
-  /* ptr == (void *)tail_block + sizeof(block_t) + tail_block->size); */
-  data_segment_size += alloc_size;
+  void *ptr = (*fp)(alloc_size);
+  if (ptr == (void *)-1) return NULL;
+
   block_t *block = ptr;
-  set_block(block, size, 0, tail_block, NULL, NULL, NULL);
-  if (tail_block) {
-    tail_block->next_phys = block;
-    // assert(block == (void *)tail_block + sizeof(block_t) +
-    // tail_block->size);
+  set_block(block, size, 0, *tail_block, NULL, NULL, NULL);
+  if (*tail_block) {
+    (*tail_block)->next_phys = block;
   }
   if (alloc_size == ALLOC_UNIT) {
     block_t *free_block = ptr + sizeof(block_t) + size;
     set_block(free_block, alloc_size - (sizeof(block_t) * 2 + size), 0, block,
               NULL, NULL, NULL);
     block->next_phys = free_block;
-    tail_block = free_block;
-    free_list_add_front(free_block);
+    *tail_block = free_block;
+    free_list_add_front(free_block, head_block);
   }
   else {
     block->next_phys = NULL;
-    tail_block = block;
+    *tail_block = block;
   }
   return block;
 }
 
-// iterate to find the first-fit
-block_t *find_ff(size_t size) {
-  // assert(head_block);
-  block_t *curr = head_block;
-  while (curr) {
-    // find the first fir here
-    if (curr->size >= size) {
-      return curr;
-    }
-    curr = curr->next_list;
-  }
-  return NULL;
+// sbrk with lock
+void *sbrk_lock(intptr_t size) {
+  assert(pthread_mutex_lock(&lock) == 0);
+  void *ptr = sbrk(size);
+  assert(pthread_mutex_unlock(&lock) == 0);
+  return ptr;
 }
 
-// iterate to find the best fit
-block_t *find_bf(size_t size) {
-  // assert(head_block);
+// policy to find block
+block_t *find_bf(size_t size, block_t **head_block) {
+  assert(head_block);
   block_t *optimal = NULL;
-  block_t *curr = head_block;
+  block_t *curr = *head_block;
   while (curr) {
     if (curr->size > size + sizeof(block_t)) {
       // find suitable one, but may not the best one.
@@ -200,127 +158,47 @@ block_t *find_bf(size_t size) {
   return optimal;
 }
 
-/*
- * 1. check free list
- * 2. judge perfect block
- */
-void *_malloc(size_t size, FunType fp) {
-  if (head_block == NULL) {
-    // No free block available
-    block_t *block = request_memory(size);
-    return block == NULL ? NULL : block + 1;
+// malloc space according to size and policy
+void *_malloc(size_t size, FunType fp, block_t **head_block,
+              block_t **tail_block) {
+  if (*head_block == NULL) {
+    block_t *block = request_memory(size, fp, head_block, tail_block);
+    return block == NULL ? block : block + 1;
   }
   else {
-    block_t *block = (*fp)(size);
-    if (block == NULL) {
-      // no suitable found in free list
-      // request new space
-      block = request_memory(size);
-      return block == NULL ? NULL : (block + 1);
+    block_t *rslt = find_bf(size, head_block);
+    if (rslt == NULL) {
+      block_t *block = request_memory(size, fp, head_block, tail_block);
+      return block == NULL ? block : block + 1;
     }
-    else if (block->size <= size + sizeof(block_t)) {
-      // Perfect block found
-      data_segment_free_space_size -= block->size + sizeof(block_t);
-      free_list_remove(block);
-      return block + 1;
+    else if (rslt->size <= size + sizeof(block_t)) { // perfect block
+      free_list_remove(rslt, head_block);
+      return rslt + 1;
     }
     else {
-      // found a block which is large enough to become two.
-      data_segment_free_space_size -= size + sizeof(block_t);
-      block_t *new_block = split(block, size);
+      block_t *new_block = split(rslt, size, tail_block);
       return new_block + 1;
     }
   }
 }
 
-// Inplemented in HW01 **************************************************
-// best fit policy adopted.
-void *ts_malloc_lock(size_t size) {
-  assert(pthread_mutex_lock(&lock) == 0);
-  void *ptr = _malloc(size, find_bf);
-  assert(pthread_mutex_unlock(&lock) == 0);
-  return ptr;
+// Merge block->next_phys into block, and form a greater one.
+void phys_list_merge_next(block_t *block, block_t **tail_block) {
+  assert(block && block->next_phys);
+  assert((void *)block + sizeof(block_t) + block->size == block->next_phys);
+  block_t *next_block = block->next_phys;
+  assert(block->isFree && next_block->isFree);
+  block->size += sizeof(block_t) + block->next_phys->size;
+  if (next_block->next_phys) {
+    next_block->next_phys->prev_phys = block;
+  }
+  else if (*tail_block) {
+    *tail_block = block;
+  }
+  block->next_phys = next_block->next_phys;
 }
 
-void ts_free_lock(void *ptr) {
-  assert(pthread_mutex_lock(&lock) == 0);
-  _free(ptr);
-  assert(pthread_mutex_unlock(&lock) == 0);
-}
-
-void *ts_malloc_nolock(size_t size) {
-  void *ptr = NULL;
-  if (head_block == NULL) {
-    // No free block available
-    block_t *block = request_memory_nolock(size);
-    ptr = block == NULL ? NULL : block + 1;
-  }
-  else {
-    block_t *block = find_bf(size);
-    if (block == NULL) {
-      // no suitable found in free list
-      // request new space
-      block = request_memory_nolock(size);
-      ptr = block == NULL ? NULL : (block + 1);
-    }
-    else if (block->size <= size + sizeof(block_t)) {
-      // Perfect block found
-      data_segment_free_space_size -= block->size + sizeof(block_t);
-      free_list_remove(block);
-      ptr = block + 1;
-    }
-    else {
-      // found a block which is large enough to become two.
-      data_segment_free_space_size -= size + sizeof(block_t);
-      block_t *new_block = split(block, size);
-      ptr = new_block + 1;
-    }
-  }
-  return ptr;
-}
-void ts_free_nolock(void *ptr) { _free(ptr); }
-
-/*
- * 1. call sbrk for memory allocation
- */
-block_t *request_memory_nolock(size_t size) {
-  size_t alloc_size = size + 2 * sizeof(block_t) > ALLOC_UNIT
-                          ? size + sizeof(block_t)
-                          : ALLOC_UNIT;
-  assert(pthread_mutex_lock(&lock) == 0);
-  void *ptr = sbrk(alloc_size);
-  assert(pthread_mutex_unlock(&lock) == 0);
-
-  if (ptr == (void *)-1) {
-    return NULL;
-  }
-  // assert(tail_block == NULL ||
-  /* ptr == (void *)tail_block + sizeof(block_t) + tail_block->size); */
-  data_segment_size += alloc_size;
-  block_t *block = ptr;
-  set_block(block, size, 0, tail_block, NULL, NULL, NULL);
-
-  if (tail_block) {
-    tail_block->next_phys = block;
-    // assert(block == (void *)tail_block + sizeof(block_t) +
-    // tail_block->size);
-  }
-  if (alloc_size == ALLOC_UNIT) {
-    block_t *free_block = ptr + sizeof(block_t) + size;
-    set_block(free_block, alloc_size - (sizeof(block_t) * 2 + size), 0, block,
-              NULL, NULL, NULL);
-
-    block->next_phys = free_block;
-    tail_block = free_block;
-    free_list_add_front(free_block);
-  }
-  else {
-    block->next_phys = NULL;
-    tail_block = block;
-  }
-  return block;
-}
-
+// init block
 void set_block(block_t *block, size_t size, int isFree, block_t *prev_phys,
                block_t *next_phys, block_t *prev_list, block_t *next_list) {
   block->size = size;
