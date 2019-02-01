@@ -13,9 +13,6 @@ void ts_free_nolock(void *ptr);
 // Store Meta Information of a block
 typedef struct BlockInfo {
   size_t size;
-  int isFree;
-  struct BlockInfo *next_phys;
-  struct BlockInfo *prev_phys;
   struct BlockInfo *next_list;
   struct BlockInfo *prev_list;
 } block_t;
@@ -33,10 +30,12 @@ typedef void *(*FunType)(intptr_t);
 void _free(void *ptr, block_t **head_block, block_t **tail_block);
 
 // Add a block to the front of the list
-void free_list_add_front(block_t *block, block_t **head_block);
+void free_list_insert(block_t *block, block_t **head_block,
+                      block_t **tail_block);
 
 // Remove a block from list
-void free_list_remove(block_t *block, block_t **head_block);
+void free_list_remove(block_t *block, block_t **head_block,
+                      block_t **tail_block);
 
 // Megre adjacent free blocks around 'block'
 void free_list_merge(block_t *block, block_t **head_block,
@@ -44,7 +43,7 @@ void free_list_merge(block_t *block, block_t **head_block,
 
 // Split block into two, the meta of block still accounts for
 // free block, the rest part is regarded as malloced one.
-block_t *split(block_t *block, size_t size, block_t **tail_block);
+block_t *split(block_t *block, size_t size);
 
 // call sbrk for memory allocation
 block_t *request_memory(size_t size, FunType fp, block_t **head_block,
@@ -60,16 +59,14 @@ block_t *find_bf(size_t size, block_t **head_block);
 void *_malloc(size_t size, FunType fp, block_t **head_block,
               block_t **tail_block);
 
-// Merge block->next_phys into block, and form a greater one.
-void phys_list_merge_next(block_t *block, block_t **tail_block);
+block_t *head_block_lock = NULL; // linked list head
+block_t *tail_block_lock = NULL; // linked list tail
 
-block_t *head_block_lock = NULL;         // linked list head
-block_t *tail_block_lock = NULL;         // physical list tail
 __thread block_t *head_block_tls = NULL; // linked list head
-__thread block_t *tail_block_tls = NULL; // physical list tail
+__thread block_t *tail_block_tls = NULL; // linked list tail
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 // init block
-void set_block(block_t *block, size_t size, int isFree, block_t *prev_phys,
-               block_t *next_phys, block_t *prev_list, block_t *next_list);
+void set_block(block_t *block, size_t size, block_t *prev_list,
+               block_t *next_list);
