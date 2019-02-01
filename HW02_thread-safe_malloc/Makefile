@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-O3 -fPIC
+CFLAGS=-O3 -fPIC  -lpthread
+#CFLAGS=-ggdb3 -fPIC
 DEPS=my_malloc.h
 
 all: lib
