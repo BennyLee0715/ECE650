@@ -136,25 +136,11 @@ block_t *split(block_t *block, size_t size) {
 block_t *request_memory(size_t size, FunType fp, block_t **head_block,
                         block_t **tail_block) {
   if (size <= 0) return NULL;
-  /*size_t alloc_size = (size + 2 * sizeof(block_t)) > ALLOC_UNIT
-                          ? (size + sizeof(block_t))
-                          : ALLOC_UNIT;
-  */
   size_t alloc_size = size + sizeof(block_t);
   void *ptr = (*fp)(alloc_size); // sbrk call
   if (ptr == (void *)-1) return NULL;
-
   block_t *block = ptr;
   set_block(block, size, NULL, NULL);
-  if (alloc_size == ALLOC_UNIT) {
-    assert(0); // Assume we never use ALLOC_UNIT optimization for debugging.
-    block_t *free_block = ptr + sizeof(block_t) + size;
-    set_block(free_block, alloc_size - (sizeof(block_t) * 2 + size), NULL,
-              NULL);
-    (*tail_block)->next_list = free_block;
-    free_block->prev_list = *tail_block;
-    *tail_block = free_block;
-  }
   return block;
 }
 
