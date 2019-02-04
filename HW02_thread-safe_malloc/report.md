@@ -13,7 +13,7 @@ No matter which version, we should initialize a lock before we try to lock and u
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 ```
 
-For LOCK_VERSION, the idea would be simple. We can take advantage of previous work, add lock immediately before and after `malloc` and `free`:
+For LOCK_VERSION, the idea would be simple. We can take advantage of previous work, add lock immediately before and after `malloc` and `free`(see below), the section between `pthread_mutex_lock` and `pthread_mutex_unlock` are called critical section, this part would not run simultaneously. For other code run in threads allows concurrency. This LOCK_VERSION provides a `malloc` and `free` level concurrency.
 
 ```C
 void *ts_malloc_lock(size_t size) {
@@ -30,7 +30,7 @@ void ts_free_lock(void *ptr) {
 }
 ```
 
-For NOLOCK_VERSION, we should only add lock right before and `sbrk` call like the following `sbrk_lock` function, with no lock added at other places. The main idea of this version is to create a free list for each thread. On every thread, code are executed sequentially, so every free list is independent on each other, no overlapping memory region should appear.
+For NOLOCK_VERSION, we should only add lock right before and after `sbrk` call like the following `sbrk_lock` function, with no lock added at other places. The main idea of this version is to create a free list for each thread. On every thread, code are executed sequentially, so every free list is independent on each other, no overlapping memory region should appear. This NOLOCK_VERSION prodes a `sbrk` level concurrency.
 
 ```C
 // sbrk of NOLOCK_VERSION
@@ -58,12 +58,15 @@ The last confusion is that, for `thread_test_malloc_free_change_thread.c` file, 
 
 Pass rate:
 
-- LOCK_VERSION
+**LOCK_VERSION**
+
  * thread_test 50/50
  * thread_test_malloc_free 50/50
  * thread_test_malloc_free_change_thread 50/50
  * thread_test_measurement 50/50
-- NOLOCK_VERSION
+ 
+**NOLOCK_VERSION**
+
  * thread_test 50/50
  * thread_test_malloc_free 50/50
  * thread_test_malloc_free_change_thread **43/50**
