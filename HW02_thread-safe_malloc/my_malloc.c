@@ -34,8 +34,6 @@ void _free(void *ptr, block_t **head_block, block_t **tail_block) {
 // Add a block to the front of the list
 void free_list_insert(block_t *block, block_t **head_block,
                       block_t **tail_block) {
-  assert(block && block->prev_list == NULL && block->next_list == NULL);
-  assert(block != *head_block);
   if (*head_block == NULL) { // free list is blank
     *head_block = block;
     *tail_block = block;
@@ -49,8 +47,6 @@ void free_list_insert(block_t *block, block_t **head_block,
   else {
     block_t *curr = *head_block;
     while (curr->next_list) {
-      assert((unsigned long)curr + sizeof(block_t) + curr->size <
-             (unsigned long)curr->next_list);
       if ((unsigned long)curr < (unsigned long)block &&
           (unsigned long)block < (unsigned long)curr->next_list)
         break;
@@ -69,7 +65,6 @@ void free_list_insert(block_t *block, block_t **head_block,
 // Remove a block from list
 void free_list_remove(block_t *block, block_t **head_block,
                       block_t **tail_block) {
-  assert(block);
   if (block->prev_list) {
     block->prev_list->next_list = block->next_list;
   }
@@ -91,10 +86,6 @@ void free_list_merge(block_t *block, block_t **head_block,
                      block_t **tail_block) {
   block_t *prev = block->prev_list;
   block_t *next = block->next_list;
-  assert(next == NULL || (unsigned long)block + sizeof(block_t) + block->size <=
-                             (unsigned long)next);
-  assert(prev == NULL || (unsigned long)prev + sizeof(block_t) + prev->size <=
-                             (unsigned long)block);
 
   if (next && (void *)block + sizeof(block_t) + block->size == next) {
     block->size += sizeof(block_t) + next->size;
@@ -122,13 +113,10 @@ void free_list_merge(block_t *block, block_t **head_block,
 // Split block into two, the meta of block still accounts for
 // free block, the rest part is regarded as malloced one.
 block_t *split(block_t *block, size_t size) {
-  assert(block && block->size >= sizeof(block_t) + size);
   size_t rest_size = block->size - sizeof(block_t) - size;
-  assert(rest_size > 0);
   block_t *new_block = (void *)block + sizeof(block_t) + rest_size;
   set_block(new_block, size, NULL, NULL);
   block->size = rest_size;
-  assert((void *)block + block->size + sizeof(block_t) == new_block);
   return new_block;
 }
 
@@ -154,7 +142,6 @@ void *sbrk_lock(intptr_t size) {
 
 // policy to find block
 block_t *find_bf(size_t size, block_t **head_block) {
-  assert(*head_block);
   block_t *optimal = NULL;
   block_t *curr = *head_block;
   while (curr) {
