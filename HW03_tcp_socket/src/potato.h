@@ -1,7 +1,8 @@
-#include <cstdio>
+#include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -14,9 +15,11 @@
 class Potato {
 public:
   int hops;
-  std::vector<int> path;
+  char path[2000];
 
-  Potato(int n = 0) : hops(n) {}
+  Potato(int n = 0) : hops(n) {
+    path[0] = 0;
+  }
 };
 
 class Server {
@@ -30,10 +33,12 @@ public:
   int sockfd; // fd for socket
   int new_fd; // fd after accept
 
-  int accept_connection() {
+  int accept_connection(std::string &ip) {
     // now accept an incoming connection:
     addr_size = sizeof(their_addr);
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    struct sockaddr_in *temp = (struct sockaddr_in *)&their_addr;
+    ip = inet_ntoa(temp->sin_addr);
     return new_fd;
   }
 

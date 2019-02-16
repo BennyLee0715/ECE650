@@ -28,22 +28,14 @@ public:
   // Server: master, Client: player
   void build_connections() {
     for (size_t i = 0; i < num_players; i++) {
-      int fd_i = this->accept_connection();
+      int fd_i = this->accept_connection(client_info[i]);
       fd[i] = fd_i;
-      char buffer[512];
 
-      // Receive IP of each player
-      size_t len;
-      recv(fd_i, &len, sizeof(len), 0);
-      recv(fd_i, buffer, len, 0);
-      buffer[len] = 0; // null terminator
-      client_info[i] = buffer;
-
-      printf("Server received : %s\n", client_info[i].c_str());
-
-      // Send Port no of each player
+      // Send Port # of each player
       size_t listening_port = BASE_PORT + i;
       send(fd_i, &listening_port, sizeof(size_t), 0);
+
+      printf("Client %zo: %s\n", i, client_info[i].c_str());
     }
   }
 
@@ -58,11 +50,57 @@ public:
     }
   }
 
+  void sendPotato() {
+    srand((unsigned int)time(NULL) + num_players);
+    int random = rand() % num_players;
+    Potato potato;
+    potato.hops = num_hops;
+    int op = 1; // potato
+
+    // send potato out
+    send(fd[random], &op, sizeof(op), 0);
+    send(fd[random], &potato, sizeof(potato), 0);
+  }
+
+  void receivePotato() {
+    fd_set rfds;
+    struct timeval tv;
+    int retval;
+
+    FD_ZERO(&rfds);
+    for (size_t i = 0; i < num_players; i++) {
+      FD_SET(fd[i], &rfds);
+    }
+
+    Potato potato;
+
+    select(new_fd + 1, &rfds, NULL, NULL, NULL);
+    for (size_t i = 0; i < num_players; i++) {
+      if (FD_ISSET(fd[i], &rfds)) {
+        recv(fd[i], &potato, sizeof(potato), 0);
+        break;
+      }
+    }
+
+    // ask all socket to close
+    for (size_t i = 0; i < num_players; i++) {
+      int op = 0; // close signal
+      send(fd[i], &op, sizeof(op), 0);
+    }
+
+    // print path
+    printf("Trace of potato:\n%s\n", potato.path);
+  }
+
   void run() {
     print_init();
     build_connections();
     std::cout << "Connections between player and server established\n";
     build_circle();
+    std::cout << "Connections among players established\n";
+
+    sendPotato();
+    receivePotato();
   }
 };
 

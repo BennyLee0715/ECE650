@@ -1,4 +1,5 @@
 #include "potato.h"
+#include <algorithm>
 #include <cstdlib>
 class Player : public Server {
 public:
@@ -34,14 +35,6 @@ public:
   void connectMaster(const char *hostname, const char *port) {
     connectServer(hostname, port, fd_master);
 
-    // send my IP to master
-    char local_hostname[256];
-    gethostname(local_hostname, 256);                    // 127.0.0.1
-    struct hostent *ret = gethostbyname(local_hostname); // vcm-8126.vm.duke.edu
-    size_t len = strlen(ret->h_name);
-    send(fd_master, &len, sizeof(len), 0);
-    send(fd_master, ret->h_name, len, 0);
-
     // receive my port to listen
     size_t temp;
     recv(fd_master, &temp, sizeof(temp), 0);
@@ -50,7 +43,7 @@ public:
     _port = port_id;
 
     // Set id according to port
-    player_id = temp - BASE_PORT + 1;
+    player_id = temp - BASE_PORT;
 
     // start as a server
     buildServer((char *)_port.c_str());
@@ -74,13 +67,58 @@ public:
     connectServer(buffer, port_id, fd_neigh);
   }
 
+  void stayListening() {
+    Potato potato;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    int fd[] = {fd_master, fd_neigh, new_fd};
+    for (int i = 0; i < 3; i++) {
+      FD_SET(fd[i], &rfds);
+    }
+    while (1) {
+      select(std::max(fd_master, new_fd) + 1, &rfds, NULL, NULL, NULL);
+      if (FD_ISSET(fd_master, &rfds)) {
+        int op;
+        recv(fd_master, &op, sizeof(op), 0);
+        if (op == 0) return; // termination signal
+        recv(fd_master, &potato, sizeof(potato), 0);
+      }
+      else if (FD_ISSET(fd_neigh, &rfds)) {
+        recv(fd_neigh, &potato, sizeof(potato), 0);
+      }
+      else if (FD_ISSET(new_fd, &rfds)) {
+        recv(new_fd, &potato, sizeof(potato), 0);
+      }
+
+      potato.hops--;
+      sprintf(potato.path, "%s%d%c", potato.path, player_id,
+              potato.hops == 0 ? '\n' : ',');
+
+      if (potato.hops == 0) {
+        send(fd_master, &potato, sizeof(potato), 0);
+      }
+
+      int random = rand() % 2;
+      if (random) {
+        send(fd_neigh, &potato, sizeof(potato), 0);
+      }
+      else {
+        send(new_fd, &potato, sizeof(potato), 0);
+      }
+    }
+  }
+
   void run() {
     connectNeigh();
+    printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
+           new_fd);
+    stayListening();
   }
 
   ~Player() {
     close(fd_master);
     close(fd_neigh);
+    close(new_fd);
   }
 };
 
