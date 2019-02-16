@@ -1,12 +1,15 @@
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <netdb.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
 
 #define BACKLOG 100
+#define BASE_PORT 30000
 
 class Potato {
 public:
@@ -18,7 +21,7 @@ public:
 
 class Server {
 public:
-  const char *port;
+  std::string _port;
   int status;
 
   struct sockaddr_storage their_addr;
@@ -35,7 +38,7 @@ public:
   }
 
   void buildServer(char *_port) {
-    port = _port;
+    this->_port = _port;
 
     // first, load up address structs with getaddrinfo():
     memset(&hints, 0, sizeof(hints));
@@ -43,7 +46,8 @@ public:
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // fill in my IP for me
 
-    getaddrinfo(NULL, port, &hints, &res);
+    // load info for server
+    getaddrinfo(NULL, _port, &hints, &res);
 
     // make a socket, bind it, and listen on it:
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);

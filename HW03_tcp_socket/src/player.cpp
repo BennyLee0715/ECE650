@@ -29,21 +29,55 @@ public:
                        host_info_list->ai_protocol);
     connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
     freeaddrinfo(host_info_list);
-    const char *message = "hi there, this is server!";
-    char buffer[512];
-    send(socket_fd, message, strlen(message), 0);
-    recv(socket_fd, buffer, 9, 0);
-    buffer[9] = 0;
-    std::cout << "Client received: " << buffer << std::endl;
   }
 
   void connectMaster(const char *hostname, const char *port) {
     connectServer(hostname, port, fd_master);
+
+    // send my IP to master
+    char local_hostname[256];
+    gethostname(local_hostname, 256);                    // 127.0.0.1
+    struct hostent *ret = gethostbyname(local_hostname); // vcm-8126.vm.duke.edu
+    size_t len = strlen(ret->h_name);
+    send(fd_master, &len, sizeof(len), 0);
+    send(fd_master, ret->h_name, len, 0);
+
+    // receive my port to listen
+    size_t temp;
+    recv(fd_master, &temp, sizeof(temp), 0);
+    char port_id[9];
+    sprintf(port_id, "%zd", temp);
+    _port = port_id;
+
+    // Set id according to port
+    player_id = temp - BASE_PORT + 1;
+
+    // start as a server
+    buildServer((char *)_port.c_str());
+    std::cout << "Player " << player_id << " is ready to play\n";
   }
 
-  void connectNeigh() {}
+  void connectNeigh() {
+    size_t len;
+    char buffer[512];
+    recv(fd_master, &len, sizeof(len), 0);
+    recv(fd_master, buffer, len, 0);
+    buffer[len] = 0;
 
-  void run() {}
+    size_t _port_id;
+    recv(fd_master, &_port_id, sizeof(_port_id), 0);
+
+    char port_id[9];
+    sprintf(port_id, "%zd", _port_id);
+
+    std::cout << "Connecting to " << buffer << " at " << _port_id << "\n";
+    connectServer(buffer, port_id, fd_neigh);
+  }
+
+  void run() {
+    connectNeigh();
+  }
+
   ~Player() {
     close(fd_master);
     close(fd_neigh);
