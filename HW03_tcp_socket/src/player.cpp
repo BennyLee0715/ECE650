@@ -51,20 +51,63 @@ public:
   }
 
   void connectNeigh() {
-    size_t len;
-    char buffer[512];
-    recv(fd_master, &len, sizeof(len), 0);
-    recv(fd_master, buffer, len, 0);
-    buffer[len] = 0;
+    int op;
+    for (int i = 0; i < 2; i++) {
+      recv(fd_master, &op, sizeof(op), 0);
+      if (op == 0) { // be a server
+        std::string host_ip;
+        accept_connection(host_ip);
+      }
+      else { // connect to neighbor
+        size_t len;
+        char ip_buffer[512];
+        recv(fd_master, &len, sizeof(len), 0);
+        recv(fd_master, ip_buffer, len, 0);
+        ip_buffer[len] = 0;
+        size_t _port_id;
+        recv(fd_master, &_port_id, sizeof(_port_id), 0);
 
-    size_t _port_id;
-    recv(fd_master, &_port_id, sizeof(_port_id), 0);
+        // recv port of neighbor
+        char port_id[9];
+        sprintf(port_id, "%zd", _port_id);
 
-    char port_id[9];
-    sprintf(port_id, "%zd", _port_id);
+        // connect to neighbor
+        connectServer(ip_buffer, port_id, fd_neigh);
+        std::cout << "I should connect to" << ip_buffer << " at " << _port_id
+                  << "\n";
+      }
+    }
 
-    std::cout << "Connecting to " << buffer << " at " << _port_id << "\n";
-    connectServer(buffer, port_id, fd_neigh);
+    /*
+    int op = 0;
+    while(1) {
+      select(10, &rfds, NULL, NULL, NULL); // fd # never exceeds 10 in client.
+      if(FD_ISSET(fd_master, &rfds)){
+        // recv IP of neighbor
+        size_t len;
+        char ip_buffer[512];
+        recv(fd_master, &len, sizeof(len), 0);
+        recv(fd_master, ip_buffer, len, 0);
+        ip_buffer[len] = 0;
+        size_t _port_id;
+        recv(fd_master, &_port_id, sizeof(_port_id), 0);
+
+        // recv port of neighbor
+        char port_id[9];
+        sprintf(port_id, "%zd", _port_id);
+
+        // connect to neighbor
+        connectServer(ip_buffer, port_id, fd_neigh);
+        std::cout << "Connecting to " << ip_buffer << " at " << _port_id <<
+    "\n"; if((op &= 2) == 3) break;
+      }
+      else if(FD_ISSET(sockfd, &rfds)){
+        std::string host_ip;
+        accept_connection(host_ip);
+        if((op &= 1) == 3) break;
+      }
+    }
+    */
   }
 
   void stayListening() {
@@ -112,7 +155,7 @@ public:
     connectNeigh();
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-    stayListening();
+    // stayListening();
   }
 
   ~Player() {
