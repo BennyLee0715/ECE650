@@ -93,16 +93,16 @@ public:
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
         recv(fd[i], &potato, sizeof(potato), 0);
-        break;
+
+        // ask all socket to close
+        for (int j = 0; j < num_players; j++) {
+          if (j == i) continue;
+          send(fd[j], &potato, sizeof(potato), 0);
+        }
       }
     }
 
-    printf("The game should finish: %d\n", potato.hops);
-
-    // ask all socket to close
-    for (int i = 0; i < num_players; i++) {
-      send(fd[i], &potato, sizeof(potato), 0);
-    }
+    printf("The game should have finished: %d\n", potato.hops);
 
     // print path
     printPotato(potato);
@@ -114,6 +114,10 @@ public:
     puts("Start build circle");
     build_circle();
     puts("Circle built successfully");
+    for (int i = 0; i < num_players; i++) {
+      std::cout << "Player " << i << ": " << client_info[i] << " at " << port[i]
+                << "\n";
+    }
     sendPotato();
     receivePotato();
   }

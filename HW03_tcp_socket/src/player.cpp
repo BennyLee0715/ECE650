@@ -32,7 +32,16 @@ public:
     }
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+    if (socket_fd == -1) {
+      std::cerr << "Error: cannot create socket" << std::endl;
+    }
+    int s =
+        connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+    if (s) {
+      std::cerr << "Error: cannot connect to socket" << std::endl;
+      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
+      perror("Perror Msg: ");
+    }
     // while (
     //     connect(socket_fd, host_info_list->ai_addr,
     //     host_info_list->ai_addrlen))
@@ -58,6 +67,7 @@ public:
     // start as a server
     int listeningPort = buildServer();
     send(fd_master, &listeningPort, sizeof(listeningPort), 0);
+    printf("[Debug] Listening at %d\n", listeningPort);
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
