@@ -99,7 +99,7 @@ public:
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
           printf("recv from %d\n", i);
-          recv(fd_master, &potato, sizeof(potato), 0);
+          recv(_fd[i], &potato, sizeof(potato), 0);
           if (potato.hops == 0) return;
           break;
         }
