@@ -35,73 +35,41 @@ public:
       size_t listening_port = BASE_PORT + i;
       send(fd_i, &listening_port, sizeof(size_t), 0);
       send(fd_i, &num_players, sizeof(&num_players), 0);
-
-      printf("Client %zo %d: %s\n", i, fd_i, client_info[i].c_str());
+      std::cout << "Player " << i << " is ready to play\n";
     }
   }
 
   void build_circle() {
-
     for (size_t i = 0; i < num_players; i++) {
       size_t next_id = (i + 1) % num_players;
       MetaInfo metaInfo;
       strcpy(metaInfo.addr, client_info[next_id].c_str());
       metaInfo.port = BASE_PORT + next_id;
       send(fd[i], &metaInfo, sizeof(metaInfo), 0);
-      printf("Sending to client %lu: %s:%lu\n", i, metaInfo.addr,
-             metaInfo.port);
     }
-
-    /*
-  for (size_t i = 1; i < num_players; i++) {
-    int op = 0;
-    send(fd[i], &op, sizeof(op), 0);
-  }
-
-  for (size_t i = 0; i < num_players - 1; i++) {
-    int op = 1;
-    send(fd[i], &op, sizeof(op), 0);
-    size_t next_id = (i + 1) % num_players;
-    size_t len = client_info[next_id].length();
-    send(fd[i], &len, sizeof(len), 0);
-    send(fd[i], (char *)client_info[next_id].c_str(), len, 0);
-    size_t port = BASE_PORT + next_id;
-    send(fd[i], &port, sizeof(port), 0);
-    // sleep(1);
-  }
-
-  // enable player 0 as a server
-  int op = 0;
-  send(fd[0], &op, sizeof(op), 0);
-
-  op = 1;
-  send(fd[num_players - 1], &op, sizeof(op), 0);
-  size_t next_id = 0;
-  size_t len = client_info[next_id].length();
-  send(fd[num_players - 1], &len, sizeof(len), 0);
-  send(fd[num_players - 1], (char *)client_info[next_id].c_str(), len, 0);
-  size_t port = BASE_PORT + next_id;
-  send(fd[num_players - 1], &port, sizeof(port), 0);
-    */
   }
 
   void sendPotato() {
-    srand((unsigned int)time(NULL) + num_players);
     int random = rand() % num_players;
     Potato potato;
     potato.hops = num_hops;
     int op = 1; // potato
 
+    printf("Ready to start the game, sending potato to player %d\n", random);
     // send potato out
     send(fd[random], &op, sizeof(op), 0);
     send(fd[random], &potato, sizeof(potato), 0);
   }
 
+  void printPotato(Potato &potato) {
+    printf("Trace of potato:\n");
+    for (int i = 0; i < potato.tot; i++) {
+      printf("%d%c", potato.path[i], i == potato.tot - 1 ? '\n' : ',');
+    }
+  }
+
   void receivePotato() {
     fd_set rfds;
-    struct timeval tv;
-    int retval;
-
     FD_ZERO(&rfds);
     for (size_t i = 0; i < num_players; i++) {
       FD_SET(fd[i], &rfds);
@@ -124,18 +92,16 @@ public:
     }
 
     // print path
-    printf("Trace of potato:\n%s\n", potato.path);
+    printPotato(potato);
   }
 
   void run() {
+    printf("%lu\n", sizeof(Potato));
     print_init();
     build_connections();
-    std::cout << "Connections between player and server established\n";
     build_circle();
-    std::cout << "Connections among players established\n";
-
-    // sendPotato();
-    // receivePotato();
+    sendPotato();
+    receivePotato();
   }
 };
 

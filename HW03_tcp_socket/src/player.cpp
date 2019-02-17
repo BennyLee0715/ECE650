@@ -49,134 +49,79 @@ public:
 
     // start as a server
     buildServer((char *)_port.c_str());
-    std::cout << "Player " << player_id << " is ready to play\n";
+    printf("Connected as player %d out of %lu total players\n", player_id,
+           num_players);
   }
 
   void connectNeigh() {
-    /*
-  fd_set rfds;
-  FD_ZERO(&rfds);
-  FD_SET(fd_master, &rfds);
-  FD_SET(sockfd, &rfds);
-    */
+    MetaInfo metaInfo;
+    recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
 
-    for (int i = 0; i < 2; i++) {
-      // select(std::max(fd_master, sockfd) + 1, &rfds, NULL, NULL, NULL);
-      if (i == 0) { //(FD_ISSET(fd_master, &rfds)) {
-        MetaInfo metaInfo;
-        recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
+    char port_id[9];
+    sprintf(port_id, "%lu", metaInfo.port);
 
-        // recv port of neighbor
-        char port_id[9];
-        sprintf(port_id, "%lu", metaInfo.port);
-
-        // connect to neighbor
-        std::cout << "Connecting to " << metaInfo.addr << " at " << port_id
-                  << "\n";
-        connectServer(metaInfo.addr, port_id, fd_neigh);
-      }
-      else {
-        std::cout << "Accepting\n";
-        std::string host_ip;
-        accept_connection(host_ip);
-      }
-      /* else {
-        perror("Something wrong in connect Neigh");
-        }*/
-    }
-
-    /*
-    int op;
-    for (int i = 0; i < 2; i++) {
-
-      recv(fd_master, &op, sizeof(op), 0);
-      if (op == 0) { // be a server
-        std::string host_ip;
-        accept_connection(host_ip);
-      }
-      else { // connect to neighbor
-        size_t len;
-        char ip_buffer[512];
-        recv(fd_master, &len, sizeof(len), 0);
-        recv(fd_master, ip_buffer, len, 0);
-        ip_buffer[len] = 0;
-        size_t _port_id;
-        recv(fd_master, &_port_id, sizeof(_port_id), 0);
-
-        // recv port of neighbor
-        char port_id[9];
-        sprintf(port_id, "%zd", _port_id);
-
-        // connect to neighbor
-        connectServer(ip_buffer, port_id, fd_neigh);
-        std::cout << "I should connect to" << ip_buffer << " at " << _port_id
-                  << "\n";
-      }
-    }
-    */
-    /*
-    int op = 0;
-    while(1) {
-      select(10, &rfds, NULL, NULL, NULL); // fd # never exceeds 10 in client.
-      if(FD_ISSET(fd_master, &rfds)){
-        // recv IP of neighbor
-        size_t len;
-        char ip_buffer[512];
-        recv(fd_master, &len, sizeof(len), 0);
-        recv(fd_master, ip_buffer, len, 0);
-        ip_buffer[len] = 0;
-        size_t _port_id;
-        recv(fd_master, &_port_id, sizeof(_port_id), 0);
-
-    if((op &= 2) == 3) break;
-      }
-      else if(FD_ISSET(sockfd, &rfds)){
-        std::string host_ip;
-        accept_connection(host_ip);
-        if((op &= 1) == 3) break;
-      }
-    }
-    */
+    // connect to neighbor
+    connectServer(metaInfo.addr, port_id, fd_neigh);
+    std::string host_ip;
+    accept_connection(host_ip);
   }
 
   void stayListening() {
-    Potato potato;
+    srand((unsigned int)time(NULL) + player_id);
     fd_set rfds;
     FD_ZERO(&rfds);
-    int fd[] = {fd_master, fd_neigh, new_fd};
+    int fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
+    int mx_fd = 0;
     for (int i = 0; i < 3; i++) {
       FD_SET(fd[i], &rfds);
+      mx_fd = std::max(mx_fd, fd[i]);
     }
     while (1) {
-      select(std::max(fd_master, new_fd) + 1, &rfds, NULL, NULL, NULL);
+      select(mx_fd + 1, &rfds, NULL, NULL, NULL);
+      puts("---------");
+      Potato potato;
       if (FD_ISSET(fd_master, &rfds)) {
         int op;
         recv(fd_master, &op, sizeof(op), 0);
-        if (op == 0) return; // termination signal
+        if (op == 0) {
+          puts("Receive end signal from master");
+          return; // termination signal
+        }
         recv(fd_master, &potato, sizeof(potato), 0);
+        puts("receive potato from master");
       }
       else if (FD_ISSET(fd_neigh, &rfds)) {
         recv(fd_neigh, &potato, sizeof(potato), 0);
+        printf("receive potato from %zd\n", (player_id + 1) % num_players);
       }
       else if (FD_ISSET(new_fd, &rfds)) {
         recv(new_fd, &potato, sizeof(potato), 0);
+        printf("receive potato from %zd\n",
+               (player_id - 1 + num_players) % num_players);
       }
+      printf("I’m it\n");
 
       potato.hops--;
-      sprintf(potato.path, "%s%d%c", potato.path, player_id,
-              potato.hops == 0 ? '\n' : ',');
+      potato.path[potato.tot++] = player_id;
+      printf("potato.tot = %d\n", potato.tot);
 
+      // reach # of hops
       if (potato.hops == 0) {
         send(fd_master, &potato, sizeof(potato), 0);
+        continue;
       }
 
-      int random = rand() % 2;
-      if (random) {
-        send(fd_neigh, &potato, sizeof(potato), 0);
-      }
-      else {
+      int dir = rand() % 2;
+      if (dir == 0) {
+        printf("Sending potato to %lu\n",
+               (player_id - 1 + num_players) % num_players);
         send(new_fd, &potato, sizeof(potato), 0);
       }
+      else {
+        printf("Sending potato to %lu\n", (player_id + 1) % num_players);
+        send(fd_neigh, &potato, sizeof(potato), 0);
+      }
+      sleep(1);
     }
   }
 
@@ -184,7 +129,7 @@ public:
     connectNeigh();
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-    // stayListening();
+    stayListening();
   }
 
   ~Player() {

@@ -15,11 +15,10 @@
 class Potato {
 public:
   int hops;
-  char path[2000];
+  int path[512];
+  int tot;
 
-  Potato(int n = 0) : hops(n) {
-    path[0] = 0;
-  }
+  Potato() : hops(0), tot(0) {}
 };
 
 class MetaInfo {
