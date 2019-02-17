@@ -93,13 +93,15 @@ public:
         mx_fd = std::max(mx_fd, _fd[i]);
       }
       int ret = select(mx_fd + 1, &rfds, NULL, NULL, NULL);
+      printf("ret = %d\n", ret);
       assert(ret == 1);
       Potato potato;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
-          printf("recv from master\n");
+          printf("recv from %d\n", i);
           recv(fd_master, &potato, sizeof(potato), 0);
           if (potato.hops == 0) return;
+          break;
         }
       }
 
