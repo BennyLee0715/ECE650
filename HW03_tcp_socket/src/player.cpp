@@ -34,6 +34,7 @@ public:
     while (connect(socket_fd, host_info_list->ai_addr,
                    host_info_list->ai_addrlen)) {
       perror("Error: cannot connect to socket ");
+      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
     }
     printf("Connected to %s at %s\n", hostname, port);
 
