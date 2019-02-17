@@ -18,7 +18,9 @@ public:
   int path[512];
   int tot;
 
-  Potato() : hops(0), tot(0) {}
+  Potato() : hops(0), tot(0) {
+    memset(path, 0, sizeof(path));
+  }
 };
 
 class MetaInfo {

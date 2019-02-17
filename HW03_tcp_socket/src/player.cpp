@@ -68,36 +68,26 @@ public:
 
   void stayListening() {
     srand((unsigned int)time(NULL) + player_id);
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    int fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
-    int mx_fd = 0;
-    for (int i = 0; i < 3; i++) {
-      FD_SET(fd[i], &rfds);
-      mx_fd = std::max(mx_fd, fd[i]);
-    }
     while (1) {
+      fd_set rfds;
+      FD_ZERO(&rfds);
+      int fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
+      int mx_fd = 0;
+      for (int i = 0; i < 3; i++) {
+        FD_SET(fd[i], &rfds);
+        mx_fd = std::max(mx_fd, fd[i]);
+      }
       select(mx_fd + 1, &rfds, NULL, NULL, NULL);
-      puts("---------");
       Potato potato;
       if (FD_ISSET(fd_master, &rfds)) {
-        int op;
-        recv(fd_master, &op, sizeof(op), 0);
-        if (op == 0) {
-          puts("Receive end signal from master");
-          return; // termination signal
-        }
         recv(fd_master, &potato, sizeof(potato), 0);
-        puts("receive potato from master");
+        if (potato.hops == 0) return;
       }
       else if (FD_ISSET(fd_neigh, &rfds)) {
         recv(fd_neigh, &potato, sizeof(potato), 0);
-        printf("receive potato from %zd\n", (player_id + 1) % num_players);
       }
       else if (FD_ISSET(new_fd, &rfds)) {
         recv(new_fd, &potato, sizeof(potato), 0);
-        printf("receive potato from %zd\n",
-               (player_id - 1 + num_players) % num_players);
       }
       printf("I’m it\n");
 
@@ -121,7 +111,6 @@ public:
         printf("Sending potato to %lu\n", (player_id + 1) % num_players);
         send(fd_neigh, &potato, sizeof(potato), 0);
       }
-      sleep(1);
     }
   }
 
