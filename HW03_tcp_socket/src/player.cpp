@@ -32,11 +32,15 @@ public:
     }
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    while (connect(socket_fd, host_info_list->ai_addr,
-                   host_info_list->ai_addrlen)) {
-      perror("Error: cannot connect to socket ");
-      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
-    }
+    connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+    // while (
+    //     connect(socket_fd, host_info_list->ai_addr,
+    //     host_info_list->ai_addrlen))
+
+    // {
+    //   perror("Error: cannot connect to socket ");
+    //   std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
+    // }
     printf("Connected to %s at %s\n", hostname, port);
 
     freeaddrinfo(host_info_list);
@@ -93,18 +97,17 @@ public:
         mx_fd = std::max(mx_fd, _fd[i]);
       }
       int ret = select(mx_fd + 1, &rfds, NULL, NULL, NULL);
-      printf("ret = %d\n", ret);
-      assert(ret == 1);
       Potato potato;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
-          printf("recv from %d\n", i);
           recv(_fd[i], &potato, sizeof(potato), 0);
           if (potato.hops == 0) return;
+          printf("recv from %d\n", i);
           break;
         }
       }
 
+      printf("ret = %d\n", ret);
       printf("I’m it\n");
 
       potato.hops--;
