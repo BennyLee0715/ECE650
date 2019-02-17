@@ -29,7 +29,11 @@ public:
     getaddrinfo(hostname, port, &host_info, &host_info_list);
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+    while (connect(socket_fd, host_info_list->ai_addr,
+                   host_info_list->ai_addrlen)) {
+      printf("Connecting\n");
+    }
+
     freeaddrinfo(host_info_list);
   }
 
@@ -55,15 +59,20 @@ public:
 
   void connectNeigh() {
     MetaInfo metaInfo;
-    recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
-
-    char port_id[9];
-    sprintf(port_id, "%lu", metaInfo.port);
-
-    // connect to neighbor
-    connectServer(metaInfo.addr, port_id, fd_neigh);
-    std::string host_ip;
-    accept_connection(host_ip);
+    for (int i = 0; i < 2; i++) {
+      recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
+      if (metaInfo.op == 0) { // connect
+        char port_id[9];
+        sprintf(port_id, "%lu", metaInfo.port);
+        // connect to neighbor
+        connectServer(metaInfo.addr, port_id, fd_neigh);
+      }
+      else { // accept
+        sleep(1);
+        std::string host_ip;
+        accept_connection(host_ip);
+      }
+    }
   }
 
   void stayListening() {

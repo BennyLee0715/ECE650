@@ -25,6 +25,7 @@ public:
 
 class MetaInfo {
 public:
+  int op; // 0 for connect, 1 for accept
   char addr[100];
   size_t port;
 };
