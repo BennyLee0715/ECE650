@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "potato.h"
 #include <algorithm>
 #include <cstdlib>
@@ -85,34 +86,23 @@ public:
       puts("----");
       fd_set rfds;
       FD_ZERO(&rfds);
-      int fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
+      int _fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
       int mx_fd = 0;
       for (int i = 0; i < 3; i++) {
-        FD_SET(fd[i], &rfds);
-        mx_fd = std::max(mx_fd, fd[i]);
+        FD_SET(_fd[i], &rfds);
+        mx_fd = std::max(mx_fd, _fd[i]);
       }
-      select(mx_fd + 1, &rfds, NULL, NULL, NULL);
+      int ret = select(mx_fd + 1, &rfds, NULL, NULL, NULL);
+      assert(ret == 1);
       Potato potato;
-      potato.hops = 1000;
-      if (FD_ISSET(fd_master, &rfds)) {
-        printf("recv from master\n");
-        Potato temp;
-        recv(fd_master, &temp, sizeof(temp), 0);
-        if (temp.hops == 0) return;
-        if (temp.hops < potato.hops) std::swap(temp, potato);
+      for (int i = 0; i < 3; i++) {
+        if (FD_ISSET(_fd[i], &rfds)) {
+          printf("recv from master\n");
+          recv(fd_master, &potato, sizeof(potato), 0);
+          if (potato.hops == 0) return;
+        }
       }
-      if (FD_ISSET(fd_neigh, &rfds)) {
-        Potato temp;
-        printf("recv from left\n");
-        recv(fd_neigh, &temp, sizeof(temp), 0);
-        if (temp.hops < potato.hops) std::swap(temp, potato);
-      }
-      if (FD_ISSET(new_fd, &rfds)) {
-        Potato temp;
-        printf("recv from right\n");
-        recv(new_fd, &temp, sizeof(temp), 0);
-        if (temp.hops < potato.hops) std::swap(temp, potato);
-      }
+
       printf("I’m it\n");
 
       potato.hops--;
@@ -123,7 +113,7 @@ public:
       // reach # of hops
       if (potato.hops == 0) {
         send(fd_master, &potato, sizeof(potato), 0);
-        continue;
+        return;
       }
 
       int dir = rand() % 2;
