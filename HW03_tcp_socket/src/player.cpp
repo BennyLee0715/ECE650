@@ -4,12 +4,12 @@
 class Player : public Server {
 public:
   int player_id;
-  size_t num_players;
+  int num_players;
 
   // As a client of master
   int fd_master;
 
-  // As a server (included in base class)
+  // int new_fd; // As a server (included in base class)
 
   // As a client of neightbor
   int fd_neigh;
@@ -29,10 +29,7 @@ public:
     getaddrinfo(hostname, port, &host_info, &host_info_list);
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    while (connect(socket_fd, host_info_list->ai_addr,
-                   host_info_list->ai_addrlen)) {
-      printf("Connecting\n");
-    }
+    connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
 
     freeaddrinfo(host_info_list);
   }
@@ -40,20 +37,17 @@ public:
   void connectMaster(const char *hostname, const char *port) {
     connectServer(hostname, port, fd_master);
 
-    // receive my port to listen
-    size_t temp;
-    recv(fd_master, &temp, sizeof(temp), 0);
-    char port_id[9];
-    sprintf(port_id, "%zd", temp);
-    _port = port_id;
+    // receive player_id
+    recv(fd_master, &player_id, sizeof(player_id), 0);
 
-    // Set id according to port
-    player_id = temp - BASE_PORT;
+    // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
 
     // start as a server
-    buildServer((char *)_port.c_str());
-    printf("Connected as player %d out of %lu total players\n", player_id,
+    int listeningPort = buildServer();
+    send(fd_master, &listeningPort, sizeof(listeningPort), 0);
+
+    printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
   }
 
@@ -63,14 +57,14 @@ public:
       recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
       if (metaInfo.op == 0) { // connect
         char port_id[9];
-        sprintf(port_id, "%lu", metaInfo.port);
-        // connect to neighbor
+        sprintf(port_id, "%d", metaInfo.port);
         connectServer(metaInfo.addr, port_id, fd_neigh);
       }
       else { // accept
-        sleep(1);
         std::string host_ip;
         accept_connection(host_ip);
+        int sig = 1;
+        send(fd_master, &sig, sizeof(sig), 0);
       }
     }
   }
@@ -78,6 +72,7 @@ public:
   void stayListening() {
     srand((unsigned int)time(NULL) + player_id);
     while (1) {
+      puts("----");
       fd_set rfds;
       FD_ZERO(&rfds);
       int fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
@@ -88,21 +83,32 @@ public:
       }
       select(mx_fd + 1, &rfds, NULL, NULL, NULL);
       Potato potato;
+      potato.hops = 1000;
       if (FD_ISSET(fd_master, &rfds)) {
-        recv(fd_master, &potato, sizeof(potato), 0);
-        if (potato.hops == 0) return;
+        printf("recv from master\n");
+        Potato temp;
+        recv(fd_master, &temp, sizeof(temp), 0);
+        if (temp.hops == 0) return;
+        if (temp.hops < potato.hops) std::swap(temp, potato);
       }
-      else if (FD_ISSET(fd_neigh, &rfds)) {
-        recv(fd_neigh, &potato, sizeof(potato), 0);
+      if (FD_ISSET(fd_neigh, &rfds)) {
+        Potato temp;
+        printf("recv from left\n");
+        recv(fd_neigh, &temp, sizeof(temp), 0);
+        if (temp.hops < potato.hops) std::swap(temp, potato);
       }
-      else if (FD_ISSET(new_fd, &rfds)) {
-        recv(new_fd, &potato, sizeof(potato), 0);
+      if (FD_ISSET(new_fd, &rfds)) {
+        Potato temp;
+        printf("recv from right\n");
+        recv(new_fd, &temp, sizeof(temp), 0);
+        if (temp.hops < potato.hops) std::swap(temp, potato);
       }
       printf("I’m it\n");
 
       potato.hops--;
       potato.path[potato.tot++] = player_id;
-      printf("potato.tot = %d\n", potato.tot);
+      printf("This is the %dst hop, the rest hops: %d\n", potato.tot,
+             potato.hops);
 
       // reach # of hops
       if (potato.hops == 0) {
@@ -112,12 +118,12 @@ public:
 
       int dir = rand() % 2;
       if (dir == 0) {
-        printf("Sending potato to %lu\n",
+        printf("Sending potato to %d\n",
                (player_id - 1 + num_players) % num_players);
         send(new_fd, &potato, sizeof(potato), 0);
       }
       else {
-        printf("Sending potato to %lu\n", (player_id + 1) % num_players);
+        printf("Sending potato to %d\n", (player_id + 1) % num_players);
         send(fd_neigh, &potato, sizeof(potato), 0);
       }
     }

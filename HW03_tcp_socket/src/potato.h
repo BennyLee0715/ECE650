@@ -27,13 +27,13 @@ class MetaInfo {
 public:
   int op; // 0 for connect, 1 for accept
   char addr[100];
-  size_t port;
+  int port;
 };
 
 class Server {
 public:
-  std::string _port;
-  int status;
+  // int _port;
+  // int status;
 
   struct sockaddr_storage their_addr;
   socklen_t addr_size;
@@ -47,20 +47,49 @@ public:
     new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
     struct sockaddr_in *temp = (struct sockaddr_in *)&their_addr;
     ip = inet_ntoa(temp->sin_addr);
+    // std::cout << "Accepting connection from " << ip << "\n";
+
     return new_fd;
   }
 
-  void buildServer(char *_port) {
-    this->_port = _port;
+  int buildServer() { // for player
+    // first, load up address structs with getaddrinfo():
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6, whichever
+    hints.ai_socktype = SOCK_STREAM;
+
+    // load info for server
+    getaddrinfo("0.0.0.0", "", &hints, &res);
+
+    // ask os to assign a port
+    struct sockaddr_in *addr_in = (struct sockaddr_in *)(res->ai_addr);
+    addr_in->sin_port = 0;
+
+    // make a socket, bind it, and listen on it:
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    bind(sockfd, res->ai_addr, res->ai_addrlen);
+    listen(sockfd, BACKLOG);
+
+    freeaddrinfo(res); /* No longer needed */
+
+    // get OS assigned port
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+    if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
+      perror("getsockname error");
+    return ntohs(sin.sin_port);
+  }
+
+  void buildServer(char *_port) { // for master
+    // this->_port = _port;
 
     // first, load up address structs with getaddrinfo():
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6, whichever
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; // fill in my IP for me
 
     // load info for server
-    getaddrinfo(NULL, _port, &hints, &res);
+    getaddrinfo("0.0.0.0", _port, &hints, &res);
 
     // make a socket, bind it, and listen on it:
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
