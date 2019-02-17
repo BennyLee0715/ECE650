@@ -47,6 +47,9 @@ public:
 
   void build_circle() {
     for (int i = 0; i < num_players; i++) {
+      std::cout << "asking player " << i << " to connect with " << (i + 1)
+                << "\n";
+
       int next_id = (i + 1) % num_players;
       MetaInfo metaInfo;
       metaInfo.op = 0;

@@ -26,10 +26,15 @@ public:
     host_info.ai_family = AF_UNSPEC;
     host_info.ai_socktype = SOCK_STREAM;
 
-    getaddrinfo(hostname, port, &host_info, &host_info_list);
+    if (getaddrinfo(hostname, port, &host_info, &host_info_list)) {
+      perror("getaddrinfo: ");
+    }
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
+    if (connect(socket_fd, host_info_list->ai_addr,
+                host_info_list->ai_addrlen)) {
+      perror("Error: cannot connect to socket ");
+    }
 
     freeaddrinfo(host_info_list);
   }
@@ -54,7 +59,10 @@ public:
   void connectNeigh() {
     MetaInfo metaInfo;
     for (int i = 0; i < 2; i++) {
+      printf("Waiting for connect message from master\n");
       recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
+      printf("Recv msg from master : %s\n",
+             metaInfo.op == 0 ? "connect" : "accept");
       if (metaInfo.op == 0) { // connect
         char port_id[9];
         sprintf(port_id, "%d", metaInfo.port);
