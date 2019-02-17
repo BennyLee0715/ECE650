@@ -4,6 +4,7 @@
 class Player : public Server {
 public:
   int player_id;
+  size_t num_players;
 
   // As a client of master
   int fd_master;
@@ -44,6 +45,7 @@ public:
 
     // Set id according to port
     player_id = temp - BASE_PORT;
+    recv(fd_master, &num_players, sizeof(num_players), 0);
 
     // start as a server
     buildServer((char *)_port.c_str());
@@ -51,8 +53,42 @@ public:
   }
 
   void connectNeigh() {
+    /*
+  fd_set rfds;
+  FD_ZERO(&rfds);
+  FD_SET(fd_master, &rfds);
+  FD_SET(sockfd, &rfds);
+    */
+
+    for (int i = 0; i < 2; i++) {
+      // select(std::max(fd_master, sockfd) + 1, &rfds, NULL, NULL, NULL);
+      if (i == 0) { //(FD_ISSET(fd_master, &rfds)) {
+        MetaInfo metaInfo;
+        recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
+
+        // recv port of neighbor
+        char port_id[9];
+        sprintf(port_id, "%lu", metaInfo.port);
+
+        // connect to neighbor
+        std::cout << "Connecting to " << metaInfo.addr << " at " << port_id
+                  << "\n";
+        connectServer(metaInfo.addr, port_id, fd_neigh);
+      }
+      else {
+        std::cout << "Accepting\n";
+        std::string host_ip;
+        accept_connection(host_ip);
+      }
+      /* else {
+        perror("Something wrong in connect Neigh");
+        }*/
+    }
+
+    /*
     int op;
     for (int i = 0; i < 2; i++) {
+
       recv(fd_master, &op, sizeof(op), 0);
       if (op == 0) { // be a server
         std::string host_ip;
@@ -77,7 +113,7 @@ public:
                   << "\n";
       }
     }
-
+    */
     /*
     int op = 0;
     while(1) {
@@ -92,14 +128,7 @@ public:
         size_t _port_id;
         recv(fd_master, &_port_id, sizeof(_port_id), 0);
 
-        // recv port of neighbor
-        char port_id[9];
-        sprintf(port_id, "%zd", _port_id);
-
-        // connect to neighbor
-        connectServer(ip_buffer, port_id, fd_neigh);
-        std::cout << "Connecting to " << ip_buffer << " at " << _port_id <<
-    "\n"; if((op &= 2) == 3) break;
+    if((op &= 2) == 3) break;
       }
       else if(FD_ISSET(sockfd, &rfds)){
         std::string host_ip;

@@ -34,54 +34,55 @@ public:
       // Send Port # of each player
       size_t listening_port = BASE_PORT + i;
       send(fd_i, &listening_port, sizeof(size_t), 0);
+      send(fd_i, &num_players, sizeof(&num_players), 0);
 
       printf("Client %zo %d: %s\n", i, fd_i, client_info[i].c_str());
     }
   }
 
   void build_circle() {
-    /*
+
     for (size_t i = 0; i < num_players; i++) {
       size_t next_id = (i + 1) % num_players;
-      size_t len = client_info[next_id].length();
-      send(fd[i], &len, sizeof(len), 0);
-      send(fd[i], (char *)client_info[next_id].c_str(), len, 0);
-      size_t port = BASE_PORT + next_id;
-      send(fd[i], &port, sizeof(port), 0);
-      printf("Sending to client %zo: %s:%lu\n", i,
-    client_info[next_id].c_str(),port);
-    }
-    */
-
-    for (size_t i = 1; i < num_players; i++) {
-      int op = 0;
-      send(fd[i], &op, sizeof(op), 0);
+      MetaInfo metaInfo;
+      strcpy(metaInfo.addr, client_info[next_id].c_str());
+      metaInfo.port = BASE_PORT + next_id;
+      send(fd[i], &metaInfo, sizeof(metaInfo), 0);
+      printf("Sending to client %lu: %s:%lu\n", i, metaInfo.addr,
+             metaInfo.port);
     }
 
-    for (size_t i = 0; i < num_players - 1; i++) {
-      int op = 1;
-      send(fd[i], &op, sizeof(op), 0);
-      size_t next_id = (i + 1) % num_players;
-      size_t len = client_info[next_id].length();
-      send(fd[i], &len, sizeof(len), 0);
-      send(fd[i], (char *)client_info[next_id].c_str(), len, 0);
-      size_t port = BASE_PORT + next_id;
-      send(fd[i], &port, sizeof(port), 0);
-      // sleep(1);
-    }
-
-    // enable player 0 as a server
+    /*
+  for (size_t i = 1; i < num_players; i++) {
     int op = 0;
-    send(fd[0], &op, sizeof(op), 0);
+    send(fd[i], &op, sizeof(op), 0);
+  }
 
-    op = 1;
-    send(fd[num_players - 1], &op, sizeof(op), 0);
-    size_t next_id = 0;
+  for (size_t i = 0; i < num_players - 1; i++) {
+    int op = 1;
+    send(fd[i], &op, sizeof(op), 0);
+    size_t next_id = (i + 1) % num_players;
     size_t len = client_info[next_id].length();
-    send(fd[num_players - 1], &len, sizeof(len), 0);
-    send(fd[num_players - 1], (char *)client_info[next_id].c_str(), len, 0);
+    send(fd[i], &len, sizeof(len), 0);
+    send(fd[i], (char *)client_info[next_id].c_str(), len, 0);
     size_t port = BASE_PORT + next_id;
-    send(fd[num_players - 1], &port, sizeof(port), 0);
+    send(fd[i], &port, sizeof(port), 0);
+    // sleep(1);
+  }
+
+  // enable player 0 as a server
+  int op = 0;
+  send(fd[0], &op, sizeof(op), 0);
+
+  op = 1;
+  send(fd[num_players - 1], &op, sizeof(op), 0);
+  size_t next_id = 0;
+  size_t len = client_info[next_id].length();
+  send(fd[num_players - 1], &len, sizeof(len), 0);
+  send(fd[num_players - 1], (char *)client_info[next_id].c_str(), len, 0);
+  size_t port = BASE_PORT + next_id;
+  send(fd[num_players - 1], &port, sizeof(port), 0);
+    */
   }
 
   void sendPotato() {

@@ -22,6 +22,12 @@ public:
   }
 };
 
+class MetaInfo {
+public:
+  char addr[100];
+  size_t port;
+};
+
 class Server {
 public:
   std::string _port;
