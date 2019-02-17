@@ -31,10 +31,11 @@ public:
     }
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
-    if (connect(socket_fd, host_info_list->ai_addr,
-                host_info_list->ai_addrlen)) {
+    while (connect(socket_fd, host_info_list->ai_addr,
+                   host_info_list->ai_addrlen)) {
       perror("Error: cannot connect to socket ");
     }
+    printf("Connected to %s at %s\n", hostname, port);
 
     freeaddrinfo(host_info_list);
   }
