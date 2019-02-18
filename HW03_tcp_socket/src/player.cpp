@@ -155,5 +155,6 @@ public:
 int main(int argc, char **argv) {
   Player *player = new Player(argv);
   player->run();
+  delete player;
   return EXIT_SUCCESS;
 }
