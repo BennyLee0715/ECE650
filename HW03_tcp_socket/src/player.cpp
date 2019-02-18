@@ -118,6 +118,7 @@ public:
   void connectNeigh() {
     // connect first, then accept
     meta_info_t meta_info;
+    memset(&meta_info, 0, sizeof(meta_info));
     printf("Waiting for connect message from master\n");
     recv(fd_master, &meta_info, sizeof(meta_info_t), 0);
     char port_id[9];
@@ -136,6 +137,7 @@ public:
     int fd[] = {new_fd, fd_neigh, fd_master};
     int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
     while (1) {
+      memset(&potato, 0, sizeof(potato));
       puts("-----");
       FD_ZERO(&rfds);
       for (int i = 0; i < 3; i++)
@@ -178,7 +180,7 @@ public:
     test_block();
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-    // stayListening();
+    stayListening();
   }
 };
 

@@ -53,6 +53,7 @@ public:
 
       // recv port id
       meta_info_t meta_info;
+      memset(&meta_info, 0, sizeof(meta_info));
       printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
              sizeof(meta_info), sizeof(meta_info_t));
       recv(fd[i], &meta_info, sizeof(meta_info_t), 0);
@@ -62,6 +63,7 @@ public:
       port[i] = meta_info.port;
       printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
       std::cout << "Player " << i << " is ready to play\n";
+      /*
       fd_set rfds;
       FD_ZERO(&rfds);
       FD_SET(fd[i], &rfds);
@@ -81,7 +83,7 @@ public:
       }
       else if (ret == 0) {
         printf("Blocked 5s successfully\n");
-      }
+        }*/
     }
   }
 
@@ -177,7 +179,7 @@ public:
     build_circle();
     puts("Circle built successfully");
 
-    // sendPotato();
+    sendPotato();
   }
 };
 
