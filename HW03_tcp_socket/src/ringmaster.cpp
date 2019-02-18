@@ -44,17 +44,44 @@ public:
 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
+      printf("[debug] sending data to player %d %lu bytes\n", i, sizeof(i));
 
       // send num_players
       send(fd[i], &num_players, sizeof(num_players), 0);
+      printf("[debug] sending data to player %d %lu bytesn\n", i,
+             sizeof(num_players));
 
       // recv port id
       meta_info_t meta_info;
-      recv(fd[i], &meta_info, sizeof(meta_info), 0);
+      printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
+             sizeof(meta_info), sizeof(meta_info_t));
+      recv(fd[i], &meta_info, sizeof(meta_info_t), 0);
+      printf("[debug] receiving data to player %d %lu bytes\n", i,
+             sizeof(meta_info));
       ip[i] = strdup(meta_info.addr);
       port[i] = meta_info.port;
       printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
       std::cout << "Player " << i << " is ready to play\n";
+      fd_set rfds;
+      FD_ZERO(&rfds);
+      FD_SET(fd[i], &rfds);
+      int nfds = fd[i] + 1;
+
+      struct timeval tv;
+      tv.tv_sec = 5;
+      tv.tv_usec = 0;
+      int ret = select(nfds, &rfds, NULL, NULL, &tv);
+
+      if (ret > 0) {
+        for (int i = 0; i < num_players; i++) {
+          if (FD_ISSET(fd[i], &rfds)) {
+            printf("[debug]received data from player %d\n", i);
+          }
+        }
+      }
+      else if (ret == 0) {
+        printf("Blocked 5s successfully\n");
+      }
     }
   }
 
@@ -115,16 +142,42 @@ public:
       }
     }
     printPotato(potato);
-    sleep(1);
   }
 
+  void test_block() {
+    // test fds
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    for (int i = 0; i < num_players; i++) {
+      FD_SET(fd[i], &rfds);
+    }
+    int nfds = new_fd + 1;
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    int ret = select(nfds, &rfds, NULL, NULL, &tv);
+
+    if (ret > 0) {
+      for (int i = 0; i < num_players; i++) {
+        if (FD_ISSET(fd[i], &rfds)) {
+          printf("[ERROR]received data from player %d\n", i);
+        }
+      }
+    }
+    else if (ret == 0) {
+      printf("[good]Blocked 5s successfully\n");
+    }
+  }
   void run() {
     print_init();
     build_connections();
+    puts("Connection built successfully among master and player");
+    test_block();
     puts("Start build circle");
     build_circle();
     puts("Circle built successfully");
-    sendPotato();
+
+    // sendPotato();
   }
 };
 

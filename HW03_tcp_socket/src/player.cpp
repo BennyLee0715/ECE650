@@ -21,6 +21,30 @@ public:
     close(new_fd);
   }
 
+  void test_block() {
+    fd_set rfds;
+    int fd[] = {new_fd, fd_neigh, fd_master};
+    int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
+    FD_ZERO(&rfds);
+    for (int i = 0; i < 3; i++)
+      FD_SET(fd[i], &rfds);
+    struct timeval tv;
+    tv.tv_usec = 0;
+    tv.tv_sec = 5;
+
+    int ret = select(nfds, &rfds, NULL, NULL, &tv);
+    if (ret > 0) {
+      for (int i = 0; i < 3; i++) {
+        if (FD_ISSET(fd[i], &rfds)) {
+          printf("[debug]received data from player %d\n", fd[i]);
+        }
+      }
+    }
+    else if (ret == 0) {
+      printf("Blocked 5s successfully\n");
+    }
+  }
+
   void connectServer(const char *hostname, const char *port, int &socket_fd) {
     int status;
     struct addrinfo host_info;
@@ -67,13 +91,16 @@ public:
 
     // receive player_id
     recv(fd_master, &player_id, sizeof(player_id), 0);
+    printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
 
     // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
+    printf("[debug]receive data from master %lu bytes\n", sizeof(num_players));
 
     // start as a server
     int listeningPort = BASE_PORT + player_id;
     meta_info_t meta_info;
+    memset(&meta_info, 0, sizeof(meta_info));
     meta_info.port = listeningPort;
     gethostname(meta_info.addr, 100);
 
@@ -82,6 +109,7 @@ public:
     buildServer(_port);
 
     send(fd_master, &meta_info, sizeof(meta_info_t), 0);
+    printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
@@ -147,9 +175,10 @@ public:
 
   void run() {
     connectNeigh();
+    test_block();
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-    stayListening();
+    // stayListening();
   }
 };
 
