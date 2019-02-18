@@ -44,24 +44,32 @@ public:
 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
-      printf("[debug] sending data to player %d %lu bytes\n", i, sizeof(i));
+      // printf("[debug] sending data to player %d %lu bytes\n", i, sizeof(i));
 
       // send num_players
       send(fd[i], &num_players, sizeof(num_players), 0);
-      printf("[debug] sending data to player %d %lu bytesn\n", i,
-             sizeof(num_players));
+      /*
+        printf("[debug] sending data to player %d %lu bytesn\n", i,
+               sizeof(num_players));
+      */
 
       // recv port id
       meta_info_t meta_info;
       memset(&meta_info, 0, sizeof(meta_info));
-      printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
+      /*
+        printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
              sizeof(meta_info), sizeof(meta_info_t));
+      */
       recv(fd[i], &meta_info, sizeof(meta_info_t), 0);
-      printf("[debug] receiving data to player %d %lu bytes\n", i,
+      /*
+        printf("[debug] receiving data to player %d %lu bytes\n", i,
              sizeof(meta_info));
+      */
       ip[i] = strdup(meta_info.addr);
       port[i] = meta_info.port;
-      printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
+      /*
+        printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
+       */
       std::cout << "Player " << i << " is ready to play\n";
       /*
       fd_set rfds;
@@ -101,6 +109,7 @@ public:
 
   void printPotato(potato_t &potato) {
     printf("Trace of potato:\n");
+    printf("Total nums: %d\n", potato.tot);
     for (int i = 0; i < potato.tot; i++) {
       printf("%d%c", potato.path[i], i == potato.tot - 1 ? '\n' : ',');
     }
@@ -143,6 +152,7 @@ public:
         break;
       }
     }
+
     printPotato(potato);
   }
 
@@ -172,14 +182,11 @@ public:
   }
   void run() {
     print_init();
+    puts("[Steo 1] SUCCESS: become a server");
     build_connections();
-    puts("Connection built successfully among master and player");
-    test_block();
-    puts("Start build circle");
-    build_circle();
-    puts("Circle built successfully");
-
+    puts("[Step 2] SUCCESS: all players connected");
     sendPotato();
+    puts("[Step 3] Potato got back");
   }
 };
 

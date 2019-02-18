@@ -177,7 +177,7 @@ public:
 
   void run() {
     connectNeigh();
-    test_block();
+    // test_block();
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
     stayListening();
