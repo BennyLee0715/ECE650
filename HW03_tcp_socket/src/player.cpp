@@ -92,17 +92,17 @@ public:
 
   void stayListening() {
     srand((unsigned int)time(NULL) + player_id);
+    fd_set rfds;
+    int _fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
     while (1) {
       puts("----");
-      fd_set rfds;
       FD_ZERO(&rfds);
-      int _fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
       int mx_fd = 0;
       for (int i = 0; i < 3; i++) {
         FD_SET(_fd[i], &rfds);
         mx_fd = std::max(mx_fd, _fd[i]);
       }
-      int ret = select(mx_fd + 1, &rfds, NULL, NULL, NULL);
+      int ret = select(sizeof(rfds) * 4, &rfds, NULL, NULL, NULL);
       Potato potato;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
