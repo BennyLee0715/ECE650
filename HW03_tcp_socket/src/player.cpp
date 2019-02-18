@@ -94,6 +94,7 @@ public:
     srand((unsigned int)time(NULL) + player_id);
     fd_set rfds;
     int _fd[] = {fd_master, fd_neigh, new_fd}; // master, right, left
+    struct Potato potato;
     while (1) {
       puts("----");
       FD_ZERO(&rfds);
@@ -103,7 +104,6 @@ public:
         mx_fd = std::max(mx_fd, _fd[i]);
       }
       int ret = select(sizeof(rfds) * 4, &rfds, NULL, NULL, NULL);
-      struct Potato potato;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
           recv(_fd[i], &potato, sizeof(potato), 0);
@@ -121,7 +121,7 @@ public:
       // reach # of hops
       if (potato.hops == 0) {
         printf("I’m it\n");
-        send(fd_master, &potato, sizeof(potato), 0);
+        send(fd_master, &potato, sizeof(potato), MSG_NOSIGNAL);
         return;
       }
 
@@ -129,11 +129,11 @@ public:
       if (dir == 0) {
         printf("Sending potato to %d\n",
                (player_id - 1 + num_players) % num_players);
-        send(new_fd, &potato, sizeof(potato), 0);
+        send(new_fd, &potato, sizeof(potato), MSG_NOSIGNAL);
       }
       else {
         printf("Sending potato to %d\n", (player_id + 1) % num_players);
-        send(fd_neigh, &potato, sizeof(potato), 0);
+        send(fd_neigh, &potato, sizeof(potato), MSG_NOSIGNAL);
       }
     }
   }

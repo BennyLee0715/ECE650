@@ -76,6 +76,7 @@ public:
   void sendPotato() {
     int random = rand() % num_players;
     struct Potato potato;
+    memset(&potato, 0, sizeof(potato));
     potato.hops = num_hops;
 
     printf("Ready to start the game, sending potato to player %d\n", random);
@@ -100,7 +101,7 @@ public:
     struct Potato potato;
     memset(&potato, 0, sizeof(potato));
 
-    int ret = select(sizeof(rfds) * 4, &rfds, NULL, NULL, NULL);
+    int ret = select(sizeof(rfds) * (num_players + 1), &rfds, NULL, NULL, NULL);
     printf("ret = %d\n", ret);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
