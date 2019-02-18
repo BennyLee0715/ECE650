@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#define BASE_PORT 30000
 using namespace std;
 
 struct potato_tag {

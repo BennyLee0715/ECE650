@@ -72,8 +72,16 @@ public:
     recv(fd_master, &num_players, sizeof(num_players), 0);
 
     // start as a server
-    int listeningPort = buildServer();
-    send(fd_master, &listeningPort, sizeof(listeningPort), 0);
+    int listeningPort = BASE_PORT + player_id;
+    meta_info_t meta_info;
+    meta_info.port = listeningPort;
+    gethostname(meta_info.addr, 100);
+
+    char _port[10];
+    sprintf(_port, "%d", listeningPort);
+    buildServer(_port);
+
+    send(fd_master, &meta_info, sizeof(meta_info_t), 0);
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);

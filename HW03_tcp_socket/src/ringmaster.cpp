@@ -40,6 +40,7 @@ public:
   void build_connections() {
     for (int i = 0; i < num_players; i++) {
       fd[i] = accept_connection(&ip[i]);
+      free(ip[i]);
 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
@@ -48,7 +49,10 @@ public:
       send(fd[i], &num_players, sizeof(num_players), 0);
 
       // recv port id
-      recv(fd[i], &port[i], sizeof(port[i]), 0);
+      meta_info_t meta_info;
+      recv(fd[i], &meta_info, sizeof(meta_info), 0);
+      ip[i] = strdup(meta_info.addr);
+      port[i] = meta_info.port;
       printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
       std::cout << "Player " << i << " is ready to play\n";
     }
