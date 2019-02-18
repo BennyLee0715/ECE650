@@ -92,7 +92,7 @@ int Server::buildServer() { // no port specified
   socklen_t len = sizeof(sin);
   if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname error");
-  cout << "Waiting for connection on port " << ntohs(sin.sin_port) << endl;
+  //  cout << "Waiting for connection on port " << ntohs(sin.sin_port) << endl;
   return ntohs(sin.sin_port);
 }
 
@@ -136,7 +136,7 @@ void Server::buildServer(char *port) {
     exit(EXIT_FAILURE);
   } // if
 
-  cout << "Waiting for connection on port " << port << endl;
+  // cout << "Waiting for connection on port " << port << endl;
   freeaddrinfo(host_info_list);
 }
 

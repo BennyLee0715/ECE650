@@ -71,8 +71,10 @@ public:
       exit(EXIT_FAILURE);
     } // if
 
+    /*
     cout << "Connecting to " << hostname << " on port " << port << "..."
          << endl;
+    */
 
     status =
         connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
@@ -91,11 +93,12 @@ public:
 
     // receive player_id
     recv(fd_master, &player_id, sizeof(player_id), 0);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
+    // printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
 
     // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(num_players));
+    // printf("[debug]receive data from master %lu bytes\n",
+    // sizeof(num_players));
 
     // start as a server
     int listeningPort = BASE_PORT + player_id;
@@ -109,7 +112,7 @@ public:
     buildServer(_port);
 
     send(fd_master, &meta_info, sizeof(meta_info_t), 0);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
+    // printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
@@ -119,14 +122,16 @@ public:
     // connect first, then accept
     meta_info_t meta_info;
     memset(&meta_info, 0, sizeof(meta_info));
-    printf("Waiting for connect message from master\n");
+    // printf("Waiting for connect message from master\n");
     recv(fd_master, &meta_info, sizeof(meta_info_t), 0);
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
+    //    printf("Player server ip %s:%s\n", meta_info.addr, port_id);
     connectServer(meta_info.addr, port_id, fd_neigh);
     char *ip;
     accept_connection(&ip);
-    printf("Accepted connection from %s, which should be player_id - 1\n", ip);
+    // printf("Accepted connection from %s, which should be player_id - 1\n",
+    // ip);
     free(ip);
   }
 
@@ -138,7 +143,7 @@ public:
     int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
     while (1) {
       memset(&potato, 0, sizeof(potato));
-      puts("-----");
+      // puts("-----");
       FD_ZERO(&rfds);
       for (int i = 0; i < 3; i++)
         FD_SET(fd[i], &rfds);
@@ -148,8 +153,9 @@ public:
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
           fd_temp = fd[i];
-          printf("Received potato from %s\n",
+          /*  printf("Received potato from %s\n",
                  i == 0 ? "left" : (i == 1 ? "right" : "master"));
+          */
           break;
         }
       }
@@ -158,10 +164,10 @@ public:
 
       potato.hops--;
       potato.path[potato.tot++] = player_id;
-      printf("This is the %dth hop\n", potato.tot);
+      // printf("This is the %dth hop\n", potato.tot);
       if (potato.hops == 0) {
         send(fd_master, &potato, sizeof(potato_t), 0);
-        printf("Sending to master\n");
+        // printf("Sending to master\n");
         printf("I'm it\n");
         continue;
       }
@@ -171,15 +177,16 @@ public:
              random == 0 ? ((player_id - 1 + num_players) % num_players)
                          : (player_id + 1) % num_players);
       send(fd[random], &potato, sizeof(potato_t), 0);
-      printf("Sending to %s\n", random == 0 ? "left" : "right");
+      // printf("Sending to %s\n", random == 0 ? "left" : "right");
     }
   }
 
   void run() {
     connectNeigh();
     // test_block();
-    printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
+    /*printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
+    */
     stayListening();
   }
 };

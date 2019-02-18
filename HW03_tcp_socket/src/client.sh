@@ -1,11 +1,9 @@
 #! /bin/bash                                                                                                  
 
-PORT=$1
-NUM_PLAYERS=$2
-NUM_HOPS=$3
-MACHINE=$4
+MACHINE=$1
+PORT=$2
 
-sleep 2
+sleep 1 
 for ((i=1; i<=$NUM_PLAYERS; i++))
 do
 ./player $MACHINE $PORT & 

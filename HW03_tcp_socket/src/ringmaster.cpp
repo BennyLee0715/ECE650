@@ -67,9 +67,9 @@ public:
       */
       ip[i] = strdup(meta_info.addr);
       port[i] = meta_info.port;
-      /*
-        printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
-       */
+
+      // printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
+
       std::cout << "Player " << i << " is ready to play\n";
       /*
       fd_set rfds;
@@ -182,11 +182,12 @@ public:
   }
   void run() {
     print_init();
-    puts("[Steo 1] SUCCESS: become a server");
+    // puts("[Steo 1] SUCCESS: become a server");
     build_connections();
-    puts("[Step 2] SUCCESS: all players connected");
+    build_circle();
+    // puts("[Step 2] SUCCESS: all players connected");
     sendPotato();
-    puts("[Step 3] Potato got back");
+    // puts("[Step 3] Potato got back");
   }
 };
 
