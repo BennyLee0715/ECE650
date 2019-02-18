@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <assert.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -14,6 +15,7 @@ struct potato_tag {
   int hops;
   int path[512];
   int tot;
+  int terminate;
 };
 typedef struct potato_tag potato_t;
 
