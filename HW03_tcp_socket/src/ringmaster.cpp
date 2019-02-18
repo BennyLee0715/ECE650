@@ -120,6 +120,7 @@ public:
     memset(&potato, 0, sizeof(potato_t));
     potato.hops = num_hops;
     if (num_hops == 0) { // end game
+      potato.terminate = 1;
       for (int i = 0; i < num_players; i++) {
         send(fd[i], &potato, sizeof(potato_t), 0);
       }
@@ -154,6 +155,7 @@ public:
     }
 
     printPotato(potato);
+    sleep(1);
   }
 
   void test_block() {

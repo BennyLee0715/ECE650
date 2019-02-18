@@ -148,6 +148,7 @@ public:
       for (int i = 0; i < 3; i++)
         FD_SET(fd[i], &rfds);
       int ret = select(nfds, &rfds, NULL, NULL, NULL);
+      // printf("ret = %d\n", ret);
       // assert(ret == 1);
       int fd_temp = -1;
       for (int i = 0; i < 3; i++) {
@@ -160,13 +161,18 @@ public:
         }
       }
       recv(fd_temp, &potato, sizeof(potato_t), 0);
-      if (potato.terminate) return;
+      if (potato.terminate == 1 || potato.hops == 0) return;
 
       potato.hops--;
       potato.path[potato.tot++] = player_id;
-      // printf("This is the %dth hop\n", potato.tot);
+      /*
+      printf("This is the %dth hop, the rest of hops is %d\n", potato.tot,
+             potato.hops);
+      */
       if (potato.hops == 0) {
-        send(fd_master, &potato, sizeof(potato_t), 0);
+        if (send(fd_master, &potato, sizeof(potato_t), 0) != sizeof(potato_t)) {
+          printf("Send error\n");
+        }
         // printf("Sending to master\n");
         printf("I'm it\n");
         continue;
@@ -176,7 +182,9 @@ public:
       printf("Sending potato to %d\n",
              random == 0 ? ((player_id - 1 + num_players) % num_players)
                          : (player_id + 1) % num_players);
-      send(fd[random], &potato, sizeof(potato_t), 0);
+      if (send(fd[random], &potato, sizeof(potato_t), 0) != sizeof(potato_t)) {
+        printf("Send error\n");
+      }
       // printf("Sending to %s\n", random == 0 ? "left" : "right");
     }
   }
