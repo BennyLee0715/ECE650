@@ -7,16 +7,25 @@ class Ringmaster : public Server {
 public:
   int num_players;
   int num_hops;
-  std::vector<int> fd;
-  std::vector<std::string> client_info; // ip
-  std::vector<int> port;
-
+  int *fd;
+  std::string *client_info;
+  int *port;
+  /*
+    std::vector<int> fd;
+    std::vector<std::string> client_info; // ip
+    std::vector<int> port;
+  */
   Ringmaster(char **arg) {
     num_players = atoi(arg[2]);
     num_hops = atoi(arg[3]);
-    fd.resize(num_players);
+    /* fd.resize(num_players);
     client_info.resize(num_players);
     port.resize(num_players);
+    */
+    fd = new int[num_players]();
+    client_info = new std::string[num_players]();
+    port = new int[num_players]();
+
     this->buildServer(arg[1]);
   }
 
@@ -52,13 +61,14 @@ public:
 
       int next_id = (i + 1) % num_players;
       MetaInfo metaInfo;
+      memset(&metaInfo, 0, sizeof(metaInfo));
       strcpy(metaInfo.addr, client_info[next_id].c_str());
       metaInfo.port = port[next_id];
       send(fd[i], &metaInfo, sizeof(metaInfo), 0);
     }
     // validate
     for (int i = 0; i < num_players; i++) {
-      int temp;
+      int temp = 0;
       recv(fd[i], &temp, sizeof(temp), 0);
     }
   }
@@ -88,15 +98,18 @@ public:
     }
 
     Potato potato;
+    memset(&potato, 0, sizeof(potato));
 
-    select(new_fd + 1, &rfds, NULL, NULL, NULL);
+    int ret = select(new_fd + 1, &rfds, NULL, NULL, NULL);
+    printf("ret = %d\n", ret);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
         recv(fd[i], &potato, sizeof(potato), 0);
+        printf("Receive finalized potato from %d\n", i);
 
         // ask all socket to close
         for (int j = 0; j < num_players; j++) {
-          if (j == i) continue;
+          // if (j == i) continue;
           send(fd[j], &potato, sizeof(potato), 0);
         }
       }
@@ -122,14 +135,18 @@ public:
     receivePotato();
   }
   virtual ~Ringmaster() {
-    for (int i = 0; i < fd.size(); i++) {
+    for (int i = 0; i < num_players; i++) {
       close(fd[i]);
     }
+    delete[] fd;
+    delete[] client_info;
+    delete[] port;
   }
 };
 
 int main(int argc, char **argv) {
   Ringmaster *ringmaster = new Ringmaster(argv);
   ringmaster->run();
+  delete ringmaster;
   return EXIT_SUCCESS;
 }

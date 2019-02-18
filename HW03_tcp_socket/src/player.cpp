@@ -35,7 +35,7 @@ public:
     if (socket_fd == -1) {
       std::cerr << "Error: cannot create socket" << std::endl;
     }
-    int yes;
+    int yes = 0;
     setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     int s =
         connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
@@ -86,7 +86,7 @@ public:
     std::string host_ip;
     accept_connection(host_ip);
     // validation
-    int sig;
+    int sig = 0;
     send(fd_master, &sig, sizeof(sig), 0);
   }
 
@@ -113,8 +113,6 @@ public:
         }
       }
 
-      printf("I’m it\n");
-
       potato.hops--;
       potato.path[potato.tot++] = player_id;
       printf("This is the %dth hop, the rest hops: %d\n", potato.tot,
@@ -122,9 +120,9 @@ public:
 
       // reach # of hops
       if (potato.hops == 0) {
-        printf("I am the last one\n");
+        printf("I’m it\n");
         send(fd_master, &potato, sizeof(potato), 0);
-        return;
+        continue;
       }
 
       int dir = rand() % 2;
