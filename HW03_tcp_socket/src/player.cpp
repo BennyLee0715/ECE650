@@ -77,7 +77,7 @@ public:
 
   void connectNeigh() {
     // connect first, then accept
-    MetaInfo metaInfo;
+    struct MetaInfo metaInfo;
     printf("Waiting for connect message from master\n");
     recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
     char port_id[9];
@@ -103,7 +103,7 @@ public:
         mx_fd = std::max(mx_fd, _fd[i]);
       }
       int ret = select(sizeof(rfds) * 4, &rfds, NULL, NULL, NULL);
-      Potato potato;
+      struct Potato potato;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(_fd[i], &rfds)) {
           recv(_fd[i], &potato, sizeof(potato), 0);
@@ -122,7 +122,7 @@ public:
       if (potato.hops == 0) {
         printf("I’m it\n");
         send(fd_master, &potato, sizeof(potato), 0);
-        continue;
+        return;
       }
 
       int dir = rand() % 2;

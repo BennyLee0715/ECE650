@@ -11,18 +11,14 @@
 
 #define BACKLOG 100
 
-class Potato {
+struct Potato {
 public:
   int hops;
   int path[512];
   int tot;
-
-  Potato() : hops(0), tot(0) {
-    memset(path, 0, sizeof(path));
-  }
 };
 
-class MetaInfo {
+struct MetaInfo {
 public:
   char addr[100];
   int port;

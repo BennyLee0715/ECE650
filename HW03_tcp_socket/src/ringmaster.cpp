@@ -60,7 +60,7 @@ public:
                 << "\n";
 
       int next_id = (i + 1) % num_players;
-      MetaInfo metaInfo;
+      struct MetaInfo metaInfo;
       memset(&metaInfo, 0, sizeof(metaInfo));
       strcpy(metaInfo.addr, client_info[next_id].c_str());
       metaInfo.port = port[next_id];
@@ -75,7 +75,7 @@ public:
 
   void sendPotato() {
     int random = rand() % num_players;
-    Potato potato;
+    struct Potato potato;
     potato.hops = num_hops;
 
     printf("Ready to start the game, sending potato to player %d\n", random);
@@ -97,10 +97,10 @@ public:
       FD_SET(fd[i], &rfds);
     }
 
-    Potato potato;
+    struct Potato potato;
     memset(&potato, 0, sizeof(potato));
 
-    int ret = select(new_fd + 1, &rfds, NULL, NULL, NULL);
+    int ret = select(sizeof(rfds) * 4, &rfds, NULL, NULL, NULL);
     printf("ret = %d\n", ret);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
@@ -109,9 +109,10 @@ public:
 
         // ask all socket to close
         for (int j = 0; j < num_players; j++) {
-          // if (j == i) continue;
+          if (j == i) continue;
           send(fd[j], &potato, sizeof(potato), 0);
         }
+        break;
       }
     }
 
