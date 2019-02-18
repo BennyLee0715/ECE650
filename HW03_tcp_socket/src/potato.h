@@ -25,16 +25,12 @@ public:
 
 class MetaInfo {
 public:
-  int op; // 0 for connect, 1 for accept
   char addr[100];
   int port;
 };
 
 class Server {
 public:
-  // int _port;
-  // int status;
-
   struct sockaddr_storage their_addr;
   socklen_t addr_size;
   struct addrinfo hints, *res;

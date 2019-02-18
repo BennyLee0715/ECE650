@@ -52,14 +52,9 @@ public:
 
       int next_id = (i + 1) % num_players;
       MetaInfo metaInfo;
-      metaInfo.op = 0;
       strcpy(metaInfo.addr, client_info[next_id].c_str());
       metaInfo.port = port[next_id];
       send(fd[i], &metaInfo, sizeof(metaInfo), 0);
-      metaInfo.op = 1;
-      send(fd[next_id], &metaInfo, sizeof(metaInfo), 0);
-      int sig;
-      recv(fd[next_id], &sig, sizeof(sig), 0);
     }
   }
 

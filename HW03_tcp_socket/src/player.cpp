@@ -35,6 +35,8 @@ public:
     if (socket_fd == -1) {
       std::cerr << "Error: cannot create socket" << std::endl;
     }
+    int yes;
+    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     int s =
         connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
     if (s) {
@@ -74,24 +76,15 @@ public:
   }
 
   void connectNeigh() {
+    // connect first, then accept
     MetaInfo metaInfo;
-    for (int i = 0; i < 2; i++) {
-      printf("Waiting for connect message from master\n");
-      recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
-      printf("Recv msg from master : %s\n",
-             metaInfo.op == 0 ? "connect" : "accept");
-      if (metaInfo.op == 0) { // connect
-        char port_id[9];
-        sprintf(port_id, "%d", metaInfo.port);
-        connectServer(metaInfo.addr, port_id, fd_neigh);
-      }
-      else { // accept
-        std::string host_ip;
-        accept_connection(host_ip);
-        int sig = 1;
-        send(fd_master, &sig, sizeof(sig), 0);
-      }
-    }
+    printf("Waiting for connect message from master\n");
+    recv(fd_master, &metaInfo, sizeof(metaInfo), 0);
+    char port_id[9];
+    sprintf(port_id, "%d", metaInfo.port);
+    connectServer(metaInfo.addr, port_id, fd_neigh);
+    std::string host_ip;
+    accept_connection(host_ip);
   }
 
   void stayListening() {
@@ -117,16 +110,16 @@ public:
         }
       }
 
-      printf("ret = %d\n", ret);
       printf("I’m it\n");
 
       potato.hops--;
       potato.path[potato.tot++] = player_id;
-      printf("This is the %dst hop, the rest hops: %d\n", potato.tot,
+      printf("This is the %dth hop, the rest hops: %d\n", potato.tot,
              potato.hops);
 
       // reach # of hops
       if (potato.hops == 0) {
+        printf("I am the last one\n");
         send(fd_master, &potato, sizeof(potato), 0);
         return;
       }
