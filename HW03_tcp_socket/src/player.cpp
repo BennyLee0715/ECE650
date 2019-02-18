@@ -85,6 +85,9 @@ public:
     connectServer(metaInfo.addr, port_id, fd_neigh);
     std::string host_ip;
     accept_connection(host_ip);
+    // validation
+    int sig;
+    send(fd_master, &sig, sizeof(sig), 0);
   }
 
   void stayListening() {

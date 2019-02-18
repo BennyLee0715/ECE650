@@ -56,6 +56,11 @@ public:
       metaInfo.port = port[next_id];
       send(fd[i], &metaInfo, sizeof(metaInfo), 0);
     }
+    // validate
+    for (int i = 0; i < num_players; i++) {
+      int temp;
+      recv(fd[i], &temp, sizeof(temp), 0);
+    }
   }
 
   void sendPotato() {
