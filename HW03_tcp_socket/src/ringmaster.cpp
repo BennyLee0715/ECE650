@@ -137,7 +137,7 @@ public:
     int random = rand() % num_players;
     printf("Ready to start the game, sending potato to player %d\n", random);
     char *ptr = serialize_potato(potato);
-    if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0)) {
+    if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
       perror("Send a broken potato\n");
     }
     free(ptr);
@@ -155,9 +155,13 @@ public:
     assert(ret == 1);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
+        printf("[INFO]recv a potato from player %d\n", i);
         char buf[BUFFER_SIZE];
         memset(buf, 0, sizeof(buf));
-        if (recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0) != BUFFER_SIZE) {
+        int len = 0;
+        if ((len = recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0)) !=
+            BUFFER_SIZE) {
+          printf("Received a wired potato whose length is %d\n", len);
           perror("Received an broken potato:\n");
         }
         potato = deserialize_potato(buf);
@@ -207,7 +211,9 @@ public:
     print_init();
     // puts("[Steo 1] SUCCESS: become a server");
     build_connections();
+    test_block();
     build_circle();
+    test_block();
     // puts("[Step 2] SUCCESS: all players connected");
     sendPotato();
     // puts("[Step 3] Potato got back");

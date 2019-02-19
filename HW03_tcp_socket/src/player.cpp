@@ -158,9 +158,9 @@ public:
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
           fd_temp = fd[i];
-          /*  printf("Received potato from %s\n",
+          printf("Received potato from %s\n",
                  i == 0 ? "left" : (i == 1 ? "right" : "master"));
-          */
+
           break;
         }
       }

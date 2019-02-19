@@ -36,12 +36,13 @@ char *serialize_potato(const potato_t &potato) {
 potato_t deserialize_potato(char *str) {
   char *token;
   const char s[2] = ",";
-
-  printf("strlen(str) = %d\n", strlen(str));
-  for (int i = 0; i < 20; i++) {
-    printf("%c", str[i]);
-  }
-  printf("str above;\n");
+  /*
+    printf("strlen(str) = %d\n", strlen(str));
+    for (int i = 0; i < 20; i++) {
+      printf("%c", str[i]);
+    }
+    printf("str above;\n");
+  */
   /* get the first token */
   potato_t potato;
   token = strtok(str, s);
