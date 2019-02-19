@@ -16,9 +16,9 @@ public:
   int hops;
   int cnt;
   int path[512];
-  Potato():hops(0), cnt(0) {}
+  Potato() : hops(0), cnt(0) {}
 
-  void print(){
+  void print() {
     printf("Trace of potato:\n");
     for (int i = 0; i < cnt; i++) {
       printf("%d%c", path[i], i == cnt - 1 ? '\n' : ',');
@@ -39,15 +39,15 @@ public:
   int new_fd; // fd after accept
   int status;
 
-  void init(char *_port); //  load up address structs with getaddrinfo():
+  void init(const char *_port); //  load up address structs with getaddrinfo():
   void set_sin_port(); // only apply to build server with system assigned port
   void create_socket();
   int get_port(); // only apply to build server with system assigned port
 
   // return value: system assigened port id
-  int buildServer(); // player
+  int buildServer();             // player
   void buildServer(char *_port); // master
-  
+
   // return value: new_fd
   int accept_connection(char **ip);
 
@@ -56,7 +56,7 @@ public:
   }
 };
 
-void Server::init(char *_port){
+void Server::init(const char *_port) {
   host_info.ai_family = AF_UNSPEC;
   host_info.ai_socktype = SOCK_STREAM;
   host_info.ai_flags = AI_PASSIVE;
@@ -65,10 +65,10 @@ void Server::init(char *_port){
   if (status != 0) {
     std::cerr << "Error: cannot get address info for host" << std::endl;
     exit(EXIT_FAILURE);
-  } 
+  }
 }
 
-void Server::set_sin_port(){
+void Server::set_sin_port() {
   // ask os to assign a port
   struct sockaddr_in *addr_in = (struct sockaddr_in *)(host_info_list->ai_addr);
   addr_in->sin_port = 0;
@@ -99,18 +99,19 @@ void Server::create_socket() {
   freeaddrinfo(host_info_list);
 }
 
-int Server::get_port(){
+int Server::get_port() {
   // get OS assigned port
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
   if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname error");
-  std::cout << "Waiting for connection on port " << ntohs(sin.sin_port) <<  std::endl;
+  std::cout << "Waiting for connection on port " << ntohs(sin.sin_port)
+            << std::endl;
   return ntohs(sin.sin_port);
 }
 
 int Server::buildServer() { // no port specified
-  init(""); // system assigened port
+  init("");                 // system assigened port
   set_sin_port();
   create_socket();
   int _port = get_port();
@@ -118,7 +119,7 @@ int Server::buildServer() { // no port specified
 }
 
 void Server::buildServer(char *port) {
-  init(port); 
+  init(port);
   create_socket();
 }
 
@@ -130,7 +131,7 @@ int Server::accept_connection(char **ip) {
     std::cerr << "Error: cannot accept connection on socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
-  if(ip != NULL) {
+  if (ip != NULL) {
     struct sockaddr_in *temp = (struct sockaddr_in *)&socket_addr;
     *ip = strdup(inet_ntoa(temp->sin_addr));
   }

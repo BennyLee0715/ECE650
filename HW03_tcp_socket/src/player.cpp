@@ -94,7 +94,8 @@ public:
     // start as a server
     int listeningPort = buildServer();
     send(fd_master, &listeningPort, sizeof(listeningPort), 0);
-    std::cout << "Connected as player " << player_id << " out of " << num_players << " total players\n";
+    std::cout << "Connected as player " << player_id << " out of "
+              << num_players << " total players\n";
   }
 
   // connect first, then accept
@@ -105,10 +106,11 @@ public:
 
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
-    printf("Player + 1 server ip %s:%s\n", meta_info.addr, port_id);
+    // printf("Player + 1 server ip %s:%s\n", meta_info.addr, port_id);
     connectServer(meta_info.addr, port_id, fd_neigh);
     accept_connection(NULL);
-    printf("Accepted connection from %s, which should be player_id - 1\n", "XXX");
+    /* printf("Accepted connection from %s, which should be player_id - 1\n",
+       "XXX");*/
   }
 
   void stayListening() {
@@ -126,10 +128,10 @@ public:
       int ret = select(nfds, &rfds, NULL, NULL, NULL);
       // printf("ret = %d\n", ret);
       assert(ret == 1);
-      int fd_temp = -1;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
-          if ((status = recv(fd_temp, &potato, sizeof(potato), MSG_WAITALL)) != sizeof(potato)) {
+          if ((status = recv(fd[i], &potato, sizeof(potato), MSG_WAITALL)) !=
+              sizeof(potato)) {
             printf("Received a broken potato whose length is %d\n", status);
             perror("");
           }
@@ -138,7 +140,6 @@ public:
       }
 
       if (potato.hops == 0) return;
-      
 
       potato.hops--;
       potato.path[potato.cnt++] = player_id;
@@ -147,18 +148,18 @@ public:
                    potato.hops);
       */
       if (potato.hops == 0) {
-        if (send(fd_master, &potato, sizeof(potato), 0) !=
-            sizeof(potato)) {
+        if (send(fd_master, &potato, sizeof(potato), 0) != sizeof(potato)) {
           std::cerr << "Send error\n";
         }
         std::cout << "I'm it\n";
+        continue;
       }
 
       int random = rand() % 2;
       printf("Sending potato to %d\n",
              random == 0 ? ((player_id - 1 + num_players) % num_players)
                          : (player_id + 1) % num_players);
-      if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato) ) {
+      if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato)) {
         printf("Send error\n");
       }
       // printf("Sending to %s\n", random == 0 ? "left" : "right");
@@ -167,11 +168,6 @@ public:
 
   void run() {
     connectNeigh();
-    // test_block();
-    /*
-    printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
-           new_fd);
-    */
     stayListening();
     puts("[SUCCESS]End listening");
     sleep(1);
