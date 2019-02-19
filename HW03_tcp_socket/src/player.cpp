@@ -165,8 +165,11 @@ public:
         }
       }
       char buff[BUFFER_SIZE];
-      if (recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0) != BUFFER_SIZE) {
-        perror("Received a broken potato;");
+      int s;
+      if ((s = recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0)) !=
+          BUFFER_SIZE) {
+        printf("Received a broken potato whose length is %d\n", s);
+        perror("");
       }
       potato = deserialize_potato(buff);
       if (potato.terminate == 1 || potato.hops == 0) {

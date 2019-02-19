@@ -211,9 +211,9 @@ public:
     print_init();
     // puts("[Steo 1] SUCCESS: become a server");
     build_connections();
-    test_block();
+    // test_block();
     build_circle();
-    test_block();
+    // test_block();
     // puts("[Step 2] SUCCESS: all players connected");
     sendPotato();
     // puts("[Step 3] Potato got back");
