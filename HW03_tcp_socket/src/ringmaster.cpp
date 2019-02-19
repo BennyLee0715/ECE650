@@ -39,13 +39,13 @@ public:
   void build_connections() {
     for (int i = 0; i < num_players; i++) {
       fd[i] = accept_connection(&ip[i]);
- 
+
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
 
       // send num_players
       send(fd[i], &num_players, sizeof(num_players), 0);
-      
+
       // recv listening port of player i
       recv(fd[i], &port[i], sizeof(port[i]), MSG_WAITALL);
       std::cout << "Player " << i << " is ready to play\n";
@@ -64,7 +64,6 @@ public:
     }
   }
 
-
   void playPotato() {
     Potato potato;
     potato.hops = num_hops;
@@ -79,7 +78,8 @@ public:
 
     // send potato out
     int random = rand() % num_players;
-    printf("Ready to start the game, sending potato to player %d\n", random);
+    std::cout << "Ready to start the game, sending potato to player " << random
+              << "\n";
     if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato)) {
       perror("Send a broken potato\n");
     }
@@ -95,7 +95,8 @@ public:
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
         int len = 0;
-        if ((len = recv(fd[i], &potato, sizeof(potato), MSG_WAITALL)) != sizeof(potato)) {
+        if ((len = recv(fd[i], &potato, sizeof(potato), MSG_WAITALL)) !=
+            sizeof(potato)) {
           printf("Received a wired potato whose length is %d\n", len);
           perror("Received an broken potato:\n");
         }
@@ -113,41 +114,11 @@ public:
     sleep(1);
   }
 
-  void test_block() {
-    // test fds
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    for (int i = 0; i < num_players; i++) {
-      FD_SET(fd[i], &rfds);
-    }
-    int nfds = new_fd + 1;
-    struct timeval tv;
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-    int ret = select(nfds, &rfds, NULL, NULL, &tv);
-
-    if (ret > 0) {
-      for (int i = 0; i < num_players; i++) {
-        if (FD_ISSET(fd[i], &rfds)) {
-          printf("[ERROR]received data from player %d\n", i);
-        }
-      }
-    }
-    else if (ret == 0) {
-      printf("[good]Blocked 5s successfully\n");
-    }
-  }
-  
   void run() {
     print_init();
-    puts("[Steo 1] SUCCESS: become a server");
     build_connections();
-    // test_block();
     build_circle();
-    // test_block();
-    puts("[Step 2] SUCCESS: all players connected");
     playPotato();
-    puts("[Step 3] Potato got back");
   }
 };
 

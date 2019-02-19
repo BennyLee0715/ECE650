@@ -21,30 +21,6 @@ public:
     close(fd_neigh);
   }
 
-  void test_block() {
-    fd_set rfds;
-    int fd[] = {new_fd, fd_neigh, fd_master};
-    int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
-    FD_ZERO(&rfds);
-    for (int i = 0; i < 3; i++)
-      FD_SET(fd[i], &rfds);
-    struct timeval tv;
-    tv.tv_usec = 0;
-    tv.tv_sec = 5;
-
-    int ret = select(nfds, &rfds, NULL, NULL, &tv);
-    if (ret > 0) {
-      for (int i = 0; i < 3; i++) {
-        if (FD_ISSET(fd[i], &rfds)) {
-          printf("[debug]received data from player %d\n", fd[i]);
-        }
-      }
-    }
-    else if (ret == 0) {
-      printf("Blocked 5s successfully\n");
-    }
-  }
-
   void connectServer(const char *hostname, const char *port, int &socket_fd) {
 
     struct addrinfo host_info;
@@ -100,17 +76,13 @@ public:
 
   // connect first, then accept
   void connectNeigh() {
-    // printf("Waiting for connect message from master\n");
     MetaInfo meta_info;
     recv(fd_master, &meta_info, sizeof(meta_info), MSG_WAITALL);
 
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
-    // printf("Player + 1 server ip %s:%s\n", meta_info.addr, port_id);
     connectServer(meta_info.addr, port_id, fd_neigh);
     accept_connection(NULL);
-    /* printf("Accepted connection from %s, which should be player_id - 1\n",
-       "XXX");*/
   }
 
   void stayListening() {
@@ -121,12 +93,10 @@ public:
     int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
     while (1) {
       memset(&potato, 0, sizeof(potato));
-      // puts("-----");
       FD_ZERO(&rfds);
       for (int i = 0; i < 3; i++)
         FD_SET(fd[i], &rfds);
       int ret = select(nfds, &rfds, NULL, NULL, NULL);
-      // printf("ret = %d\n", ret);
       assert(ret == 1);
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
@@ -143,10 +113,6 @@ public:
 
       potato.hops--;
       potato.path[potato.cnt++] = player_id;
-      /*
-            printf("This is the %dth hop, the rest of hops is %d\n", potato.tot,
-                   potato.hops);
-      */
       if (potato.hops == 0) {
         if (send(fd_master, &potato, sizeof(potato), 0) != sizeof(potato)) {
           std::cerr << "Send error\n";
@@ -162,14 +128,12 @@ public:
       if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato)) {
         printf("Send error\n");
       }
-      // printf("Sending to %s\n", random == 0 ? "left" : "right");
     }
   }
 
   void run() {
     connectNeigh();
     stayListening();
-    puts("[SUCCESS]End listening");
     sleep(1);
   }
 };
