@@ -10,21 +10,69 @@
 #include <sys/types.h>
 #include <unistd.h>
 #define BASE_PORT 30000
+#define BUFFER_SIZE 2500
 using namespace std;
 
 struct potato_tag {
   int hops;
-  int path[512];
   int tot;
   int terminate;
+  int path[512];
 };
 typedef struct potato_tag potato_t;
+
+char *serialize_potato(const potato_t &potato) {
+  char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
+  sprintf(ptr, "%d", potato.hops);
+  sprintf(ptr, "%s,%d", ptr, potato.tot);
+  sprintf(ptr, "%s,%d", ptr, potato.terminate);
+  for (int i = 0; i < potato.tot; i++) {
+    sprintf(ptr, "%s,%d", ptr, potato.path[i]);
+  }
+  return ptr;
+}
+
+potato_t deserialize_potato(char *str) {
+  char *token;
+  const char s[2] = ",";
+
+  /* get the first token */
+  potato_t potato;
+  token = strtok(str, s);
+  sscanf(token, "%d", &potato.hops);
+  token = strtok(NULL, s);
+  sscanf(token, "%d", &potato.tot);
+  token = strtok(NULL, s);
+  sscanf(token, "%d", &potato.terminate);
+
+  /* walk through other tokens */
+  for (int i = 0; i < potato.tot; i++) {
+    token = strtok(NULL, s);
+    sscanf(token, "%d", potato.path + i);
+  }
+
+  // free(str);
+  return potato;
+}
 
 struct meta_info_tag {
   char addr[100];
   int port;
 };
 typedef struct meta_info_tag meta_info_t;
+
+char *serialize_meta(const meta_info_t &meta) {
+  char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
+  sprintf(ptr, "%d,%s", meta.port, meta.addr);
+  return ptr;
+}
+
+meta_info_t deserialize_meta(char *ptr) {
+  meta_info_t meta;
+  memset(&meta, 0, sizeof(meta));
+  sscanf(ptr, "%d,%s", &meta.port, meta.addr);
+  return meta;
+}
 
 class Server {
 public:
@@ -92,7 +140,8 @@ int Server::buildServer() { // no port specified
   socklen_t len = sizeof(sin);
   if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname error");
-  //  cout << "Waiting for connection on port " << ntohs(sin.sin_port) << endl;
+  //  cout << "Waiting for connection on port " << ntohs(sin.sin_port) <<
+  //  endl;
   return ntohs(sin.sin_port);
 }
 

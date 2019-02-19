@@ -16,9 +16,9 @@ public:
   }
 
   virtual ~Player() {
+    close(new_fd);
     close(fd_master);
     close(fd_neigh);
-    close(new_fd);
   }
 
   void test_block() {
@@ -93,12 +93,11 @@ public:
 
     // receive player_id
     recv(fd_master, &player_id, sizeof(player_id), 0);
-    // printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
+    printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
 
     // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
-    // printf("[debug]receive data from master %lu bytes\n",
-    // sizeof(num_players));
+    printf("[debug]receive data from master %lu bytes\n", sizeof(num_players));
 
     // start as a server
     int listeningPort = BASE_PORT + player_id;
@@ -111,8 +110,13 @@ public:
     sprintf(_port, "%d", listeningPort);
     buildServer(_port);
 
-    send(fd_master, &meta_info, sizeof(meta_info_t), 0);
-    // printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
+    char *ptr = serialize_meta(meta_info);
+    if (send(fd_master, ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+      perror("[Error] send in void connectMaster(const char *hostname, const "
+             "char *port): ");
+    }
+    free(ptr);
+    printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
@@ -120,10 +124,10 @@ public:
 
   void connectNeigh() {
     // connect first, then accept
-    meta_info_t meta_info;
-    memset(&meta_info, 0, sizeof(meta_info));
     // printf("Waiting for connect message from master\n");
-    recv(fd_master, &meta_info, sizeof(meta_info_t), 0);
+    char buffer[BUFFER_SIZE];
+    recv(fd_master, buffer, BUFFER_SIZE * sizeof(*buffer), 0);
+    meta_info_t meta_info = deserialize_meta(buffer);
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
     //    printf("Player server ip %s:%s\n", meta_info.addr, port_id);
@@ -160,21 +164,30 @@ public:
           break;
         }
       }
-      recv(fd_temp, &potato, sizeof(potato_t), 0);
-      if (potato.terminate == 1 || potato.hops == 0) return;
+      char buff[BUFFER_SIZE];
+      recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0);
+      potato = deserialize_potato(buff);
+      if (potato.terminate == 1 || potato.hops == 0) {
+        // int sig = 0;
+        //  send(fd_master, &sig, sizeof(sig), 0);
+        return;
+      }
 
       potato.hops--;
       potato.path[potato.tot++] = player_id;
       /*
-      printf("This is the %dth hop, the rest of hops is %d\n", potato.tot,
-             potato.hops);
+            printf("This is the %dth hop, the rest of hops is %d\n", potato.tot,
+                   potato.hops);
       */
       if (potato.hops == 0) {
-        if (send(fd_master, &potato, sizeof(potato_t), 0) != sizeof(potato_t)) {
+        char *ptr = serialize_potato(potato);
+        if (send(fd_master, ptr, BUFFER_SIZE * sizeof(*ptr), 0) !=
+            sizeof(potato_t)) {
           printf("Send error\n");
         }
         // printf("Sending to master\n");
         printf("I'm it\n");
+        free(ptr);
         continue;
       }
 
@@ -182,9 +195,11 @@ public:
       printf("Sending potato to %d\n",
              random == 0 ? ((player_id - 1 + num_players) % num_players)
                          : (player_id + 1) % num_players);
-      if (send(fd[random], &potato, sizeof(potato_t), 0) != sizeof(potato_t)) {
+      char *ptr = serialize_potato(potato);
+      if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
         printf("Send error\n");
       }
+      free(ptr);
       // printf("Sending to %s\n", random == 0 ? "left" : "right");
     }
   }
@@ -196,6 +211,8 @@ public:
            new_fd);
     */
     stayListening();
+    cout << "[SUCCESS]End listening\n";
+    sleep(1);
   }
 };
 

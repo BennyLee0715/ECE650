@@ -53,14 +53,13 @@ public:
                sizeof(num_players));
       */
 
-      // recv port id
-      meta_info_t meta_info;
-      memset(&meta_info, 0, sizeof(meta_info));
       /*
         printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
              sizeof(meta_info), sizeof(meta_info_t));
       */
-      recv(fd[i], &meta_info, sizeof(meta_info_t), 0);
+      char buffer[BUFFER_SIZE];
+      recv(fd[i], buffer, BUFFER_SIZE * sizeof(*buffer), 0);
+      meta_info_t meta_info = deserialize_meta(buffer);
       /*
         printf("[debug] receiving data to player %d %lu bytes\n", i,
              sizeof(meta_info));
@@ -103,7 +102,10 @@ public:
       int next_id = (i + 1) % num_players;
       meta_info.port = port[next_id];
       strcpy(meta_info.addr, ip[next_id]);
-      send(fd[i], &meta_info, sizeof(meta_info_t), 0);
+
+      char *ptr = serialize_meta(meta_info);
+      send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+      free(ptr);
     }
   }
 
@@ -121,16 +123,20 @@ public:
     potato.hops = num_hops;
     if (num_hops == 0) { // end game
       potato.terminate = 1;
+      char *ptr = serialize_potato(potato);
       for (int i = 0; i < num_players; i++) {
-        send(fd[i], &potato, sizeof(potato_t), 0);
+        send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
       }
+      free(ptr);
       return;
     }
 
     // send potato out
     int random = rand() % num_players;
     printf("Ready to start the game, sending potato to player %d\n", random);
-    send(fd[random], &potato, sizeof(potato_t), 0);
+    char *ptr = serialize_potato(potato);
+    send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+    free(ptr);
 
     fd_set rfds;
     FD_ZERO(&rfds);
@@ -145,17 +151,22 @@ public:
     assert(ret == 1);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
-        recv(fd[i], &potato, sizeof(potato_t), 0);
+        char buf[BUFFER_SIZE];
+        recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0);
+        potato = deserialize_potato(buf);
         potato.terminate = 1;
+        char *ptr = serialize_potato(potato);
         for (int j = 0; j < num_players; j++) {
-          send(fd[j], &potato, sizeof(potato_t), 0);
+          send(fd[j], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+          //  int sig = 0;
+          // recv(fd[j], &sig, sizeof(sig), 0);
         }
+        free(ptr);
         break;
       }
     }
 
     printPotato(potato);
-    sleep(1);
   }
 
   void test_block() {
