@@ -125,7 +125,9 @@ public:
       potato.terminate = 1;
       char *ptr = serialize_potato(potato);
       for (int i = 0; i < num_players; i++) {
-        send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+        if (send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+          perror("Send a broken potato\n");
+        }
       }
       free(ptr);
       return;
@@ -135,7 +137,9 @@ public:
     int random = rand() % num_players;
     printf("Ready to start the game, sending potato to player %d\n", random);
     char *ptr = serialize_potato(potato);
-    send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+    if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0)) {
+      perror("Send a broken potato\n");
+    }
     free(ptr);
 
     fd_set rfds;
@@ -152,12 +156,17 @@ public:
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
         char buf[BUFFER_SIZE];
-        recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0);
+        memset(buf, 0, sizeof(buf));
+        if (recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0) != BUFFER_SIZE) {
+          perror("Received an broken potato:\n");
+        }
         potato = deserialize_potato(buf);
         potato.terminate = 1;
         char *ptr = serialize_potato(potato);
         for (int j = 0; j < num_players; j++) {
-          send(fd[j], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
+          if (send(fd[j], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+            perror("broken");
+          }
           //  int sig = 0;
           // recv(fd[j], &sig, sizeof(sig), 0);
         }
@@ -167,6 +176,7 @@ public:
     }
 
     printPotato(potato);
+    sleep(1);
   }
 
   void test_block() {

@@ -23,6 +23,7 @@ typedef struct potato_tag potato_t;
 
 char *serialize_potato(const potato_t &potato) {
   char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
+  memset(ptr, 0, BUFFER_SIZE);
   sprintf(ptr, "%d", potato.hops);
   sprintf(ptr, "%s,%d", ptr, potato.tot);
   sprintf(ptr, "%s,%d", ptr, potato.terminate);
@@ -36,6 +37,11 @@ potato_t deserialize_potato(char *str) {
   char *token;
   const char s[2] = ",";
 
+  printf("strlen(str) = %d\n", strlen(str));
+  for (int i = 0; i < 20; i++) {
+    printf("%c", str[i]);
+  }
+  printf("str above;\n");
   /* get the first token */
   potato_t potato;
   token = strtok(str, s);
@@ -44,6 +50,9 @@ potato_t deserialize_potato(char *str) {
   sscanf(token, "%d", &potato.tot);
   token = strtok(NULL, s);
   sscanf(token, "%d", &potato.terminate);
+  printf("potato.hops = %d\n", potato.hops);
+  printf("potato.tot = %d\n", potato.tot);
+  printf("potato.terminate = %d\n", potato.terminate);
 
   /* walk through other tokens */
   for (int i = 0; i < potato.tot; i++) {
@@ -63,6 +72,7 @@ typedef struct meta_info_tag meta_info_t;
 
 char *serialize_meta(const meta_info_t &meta) {
   char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
+  memset(ptr, 0, BUFFER_SIZE);
   sprintf(ptr, "%d,%s", meta.port, meta.addr);
   return ptr;
 }

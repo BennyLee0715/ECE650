@@ -165,7 +165,9 @@ public:
         }
       }
       char buff[BUFFER_SIZE];
-      recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0);
+      if (recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0) != BUFFER_SIZE) {
+        perror("Received a broken potato;");
+      }
       potato = deserialize_potato(buff);
       if (potato.terminate == 1 || potato.hops == 0) {
         // int sig = 0;
@@ -182,7 +184,7 @@ public:
       if (potato.hops == 0) {
         char *ptr = serialize_potato(potato);
         if (send(fd_master, ptr, BUFFER_SIZE * sizeof(*ptr), 0) !=
-            sizeof(potato_t)) {
+            BUFFER_SIZE) {
           printf("Send error\n");
         }
         // printf("Sending to master\n");
@@ -207,9 +209,9 @@ public:
   void run() {
     connectNeigh();
     // test_block();
-    /*printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
+    printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-    */
+
     stayListening();
     cout << "[SUCCESS]End listening\n";
     sleep(1);
