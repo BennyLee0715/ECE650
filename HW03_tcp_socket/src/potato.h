@@ -65,6 +65,17 @@ potato_t deserialize_potato(char *str) {
   return potato;
 }
 
+int recv_data(int fd, char *buf) {
+  int tot = 0, len;
+  while (1) {
+    len = recv(fd, buf + tot, BUFFER_SIZE - tot, 0);
+    if (len == 0) break;
+    tot += len;
+    if (tot == BUFFER_SIZE) return 0;
+  }
+  return tot;
+}
+
 struct meta_info_tag {
   char addr[100];
   int port;

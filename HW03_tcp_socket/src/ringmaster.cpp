@@ -58,7 +58,7 @@ public:
              sizeof(meta_info), sizeof(meta_info_t));
       */
       char buffer[BUFFER_SIZE];
-      recv(fd[i], buffer, BUFFER_SIZE * sizeof(*buffer), 0);
+      recv_data(fd[i], buffer);
       meta_info_t meta_info = deserialize_meta(buffer);
       /*
         printf("[debug] receiving data to player %d %lu bytes\n", i,
@@ -159,8 +159,7 @@ public:
         char buf[BUFFER_SIZE];
         memset(buf, 0, sizeof(buf));
         int len = 0;
-        if ((len = recv(fd[i], buf, BUFFER_SIZE * sizeof(char), 0)) !=
-            BUFFER_SIZE) {
+        if (len = recv_data(fd[i], buf)) {
           printf("Received a wired potato whose length is %d\n", len);
           perror("Received an broken potato:\n");
         }

@@ -126,7 +126,7 @@ public:
     // connect first, then accept
     // printf("Waiting for connect message from master\n");
     char buffer[BUFFER_SIZE];
-    recv(fd_master, buffer, BUFFER_SIZE * sizeof(*buffer), 0);
+    recv_data(fd_master, buffer);
     meta_info_t meta_info = deserialize_meta(buffer);
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
@@ -166,8 +166,7 @@ public:
       }
       char buff[BUFFER_SIZE];
       int s;
-      if ((s = recv(fd_temp, buff, BUFFER_SIZE * sizeof(*buff), 0)) !=
-          BUFFER_SIZE) {
+      if (s = recv_data(fd_temp, buff)) {
         printf("Received a broken potato whose length is %d\n", s);
         perror("");
       }
