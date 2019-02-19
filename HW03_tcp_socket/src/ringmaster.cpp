@@ -44,53 +44,16 @@ public:
 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
-      // printf("[debug] sending data to player %d %lu bytes\n", i, sizeof(i));
 
       // send num_players
       send(fd[i], &num_players, sizeof(num_players), 0);
-      /*
-        printf("[debug] sending data to player %d %lu bytesn\n", i,
-               sizeof(num_players));
-      */
-
-      /*
-        printf("sizeof(meta_info) = %lu, sizeof(meta_info_t) = %lu\n",
-             sizeof(meta_info), sizeof(meta_info_t));
-      */
       char buffer[BUFFER_SIZE];
       recv_data(fd[i], buffer);
       meta_info_t meta_info = deserialize_meta(buffer);
-      /*
-        printf("[debug] receiving data to player %d %lu bytes\n", i,
-             sizeof(meta_info));
-      */
       ip[i] = strdup(meta_info.addr);
       port[i] = meta_info.port;
 
-      // printf("[Debug] Player %d listen at %s:%d\n", i, ip[i], port[i]);
-
       std::cout << "Player " << i << " is ready to play\n";
-      /*
-      fd_set rfds;
-      FD_ZERO(&rfds);
-      FD_SET(fd[i], &rfds);
-      int nfds = fd[i] + 1;
-
-      struct timeval tv;
-      tv.tv_sec = 5;
-      tv.tv_usec = 0;
-      int ret = select(nfds, &rfds, NULL, NULL, &tv);
-
-      if (ret > 0) {
-        for (int i = 0; i < num_players; i++) {
-          if (FD_ISSET(fd[i], &rfds)) {
-            printf("[debug]received data from player %d\n", i);
-          }
-        }
-      }
-      else if (ret == 0) {
-        printf("Blocked 5s successfully\n");
-        }*/
     }
   }
 
@@ -111,7 +74,6 @@ public:
 
   void printPotato(potato_t &potato) {
     printf("Trace of potato:\n");
-    printf("Total nums: %d\n", potato.tot);
     for (int i = 0; i < potato.tot; i++) {
       printf("%d%c", potato.path[i], i == potato.tot - 1 ? '\n' : ',');
     }
@@ -155,7 +117,6 @@ public:
     assert(ret == 1);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
-        printf("[INFO]recv a potato from player %d\n", i);
         char buf[BUFFER_SIZE];
         memset(buf, 0, sizeof(buf));
         int len = 0;
@@ -170,8 +131,6 @@ public:
           if (send(fd[j], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
             perror("broken");
           }
-          //  int sig = 0;
-          // recv(fd[j], &sig, sizeof(sig), 0);
         }
         free(ptr);
         break;

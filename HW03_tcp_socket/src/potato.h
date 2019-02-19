@@ -36,13 +36,6 @@ char *serialize_potato(const potato_t &potato) {
 potato_t deserialize_potato(char *str) {
   char *token;
   const char s[2] = ",";
-  /*
-    printf("strlen(str) = %d\n", strlen(str));
-    for (int i = 0; i < 20; i++) {
-      printf("%c", str[i]);
-    }
-    printf("str above;\n");
-  */
   /* get the first token */
   potato_t potato;
   token = strtok(str, s);
@@ -51,9 +44,6 @@ potato_t deserialize_potato(char *str) {
   sscanf(token, "%d", &potato.tot);
   token = strtok(NULL, s);
   sscanf(token, "%d", &potato.terminate);
-  printf("potato.hops = %d\n", potato.hops);
-  printf("potato.tot = %d\n", potato.tot);
-  printf("potato.terminate = %d\n", potato.terminate);
 
   /* walk through other tokens */
   for (int i = 0; i < potato.tot; i++) {
@@ -207,7 +197,6 @@ void Server::buildServer(char *port) {
     exit(EXIT_FAILURE);
   } // if
 
-  // cout << "Waiting for connection on port " << port << endl;
   freeaddrinfo(host_info_list);
 }
 

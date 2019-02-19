@@ -93,11 +93,13 @@ public:
 
     // receive player_id
     recv(fd_master, &player_id, sizeof(player_id), 0);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(player_id));
+    //    printf("[debug]receive data from master %lu bytes\n",
+    //    sizeof(player_id));
 
     // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(num_players));
+    //  printf("[debug]receive data from master %lu bytes\n",
+    //  sizeof(num_players));
 
     // start as a server
     int listeningPort = BASE_PORT + player_id;
@@ -116,7 +118,7 @@ public:
              "char *port): ");
     }
     free(ptr);
-    printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
+    // printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
 
     printf("Connected as player %d out of %d total players\n", player_id,
            num_players);
@@ -158,9 +160,9 @@ public:
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
           fd_temp = fd[i];
-          printf("Received potato from %s\n",
-                 i == 0 ? "left" : (i == 1 ? "right" : "master"));
-
+          /*printf("Received potato from %s\n",
+                    i == 0 ? "left" : (i == 1 ? "right" : "master"));
+          */
           break;
         }
       }
@@ -211,11 +213,12 @@ public:
   void run() {
     connectNeigh();
     // test_block();
+    /*
     printf("fd_master: %d, fd_neigh: %d, new_fd: %d\n", fd_master, fd_neigh,
            new_fd);
-
+    */
     stayListening();
-    cout << "[SUCCESS]End listening\n";
+    // cout << "[SUCCESS]End listening\n";
     sleep(1);
   }
 };
