@@ -46,7 +46,7 @@ public:
   }
 
   void connectServer(const char *hostname, const char *port, int &socket_fd) {
-    int status;
+
     struct addrinfo host_info;
     struct addrinfo *host_info_list;
 
@@ -56,8 +56,8 @@ public:
 
     status = getaddrinfo(hostname, port, &host_info, &host_info_list);
     if (status != 0) {
-      cerr << "Error: cannot get address info for host" << endl;
-      cerr << "  (" << hostname << "," << port << ")" << endl;
+      std::cerr << "Error: cannot get address info for host" << std::endl;
+      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
       perror("[MYF]error exit -1\n");
       exit(EXIT_FAILURE);
     } // if
@@ -65,22 +65,16 @@ public:
     socket_fd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                        host_info_list->ai_protocol);
     if (socket_fd == -1) {
-      cerr << "Error: cannot create socket" << endl;
-      cerr << "  (" << hostname << "," << port << ")" << endl;
-      perror("[MYF]error exit -1\n");
+      std::cerr << "Error: cannot create socket" << std::endl;
+      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
       exit(EXIT_FAILURE);
     } // if
-
-    /*
-    cout << "Connecting to " << hostname << " on port " << port << "..."
-         << endl;
-    */
 
     status =
         connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
     if (status == -1) {
-      cerr << "Error: cannot connect to socket" << endl;
-      cerr << "  (" << hostname << "," << port << ")" << endl;
+      std::cerr << "Error: cannot connect to socket" << std::endl;
+      std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
       perror("[MYF]error exit -1\n");
       exit(EXIT_FAILURE);
     } // if
@@ -93,57 +87,33 @@ public:
 
     // receive player_id
     recv(fd_master, &player_id, sizeof(player_id), 0);
-    //    printf("[debug]receive data from master %lu bytes\n",
-    //    sizeof(player_id));
 
     // receive num_players
     recv(fd_master, &num_players, sizeof(num_players), 0);
-    //  printf("[debug]receive data from master %lu bytes\n",
-    //  sizeof(num_players));
 
     // start as a server
-    int listeningPort = BASE_PORT + player_id;
-    meta_info_t meta_info;
-    memset(&meta_info, 0, sizeof(meta_info));
-    meta_info.port = listeningPort;
-    gethostname(meta_info.addr, 100);
-
-    char _port[10];
-    sprintf(_port, "%d", listeningPort);
-    buildServer(_port);
-
-    char *ptr = serialize_meta(meta_info);
-    if (send(fd_master, ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
-      perror("[Error] send in void connectMaster(const char *hostname, const "
-             "char *port): ");
-    }
-    free(ptr);
-    // printf("[debug]receive data from master %lu bytes\n", sizeof(meta_info));
-
-    printf("Connected as player %d out of %d total players\n", player_id,
-           num_players);
+    int listeningPort = buildServer();
+    send(fd_master, &listeningPort, sizeof(listeningPort), 0);
+    std::cout << "Connected as player " << player_id << " out of " << num_players << " total players\n";
   }
 
+  // connect first, then accept
   void connectNeigh() {
-    // connect first, then accept
     // printf("Waiting for connect message from master\n");
-    char buffer[BUFFER_SIZE];
-    recv_data(fd_master, buffer);
-    meta_info_t meta_info = deserialize_meta(buffer);
+    MetaInfo meta_info;
+    recv(fd_master, &meta_info, sizeof(meta_info), MSG_WAITALL);
+
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
-    //    printf("Player server ip %s:%s\n", meta_info.addr, port_id);
+    printf("Player + 1 server ip %s:%s\n", meta_info.addr, port_id);
     connectServer(meta_info.addr, port_id, fd_neigh);
-    char *ip;
-    accept_connection(&ip);
-    // printf("Accepted connection from %s, which should be player_id - 1\n",
-    // ip);
-    free(ip);
+    accept_connection(NULL);
+    printf("Accepted connection from %s, which should be player_id - 1\n", "XXX");
   }
 
   void stayListening() {
     srand((unsigned int)time(NULL) + player_id);
-    potato_t potato;
+    Potato potato;
     fd_set rfds;
     int fd[] = {new_fd, fd_neigh, fd_master};
     int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
@@ -155,57 +125,42 @@ public:
         FD_SET(fd[i], &rfds);
       int ret = select(nfds, &rfds, NULL, NULL, NULL);
       // printf("ret = %d\n", ret);
-      // assert(ret == 1);
+      assert(ret == 1);
       int fd_temp = -1;
       for (int i = 0; i < 3; i++) {
         if (FD_ISSET(fd[i], &rfds)) {
-          fd_temp = fd[i];
-          /*printf("Received potato from %s\n",
-                    i == 0 ? "left" : (i == 1 ? "right" : "master"));
-          */
+          if ((status = recv(fd_temp, &potato, sizeof(potato), MSG_WAITALL)) != sizeof(potato)) {
+            printf("Received a broken potato whose length is %d\n", status);
+            perror("");
+          }
           break;
         }
       }
-      char buff[BUFFER_SIZE];
-      int s;
-      if (s = recv_data(fd_temp, buff)) {
-        printf("Received a broken potato whose length is %d\n", s);
-        perror("");
-      }
-      potato = deserialize_potato(buff);
-      if (potato.terminate == 1 || potato.hops == 0) {
-        // int sig = 0;
-        //  send(fd_master, &sig, sizeof(sig), 0);
-        return;
-      }
+
+      if (potato.hops == 0) return;
+      
 
       potato.hops--;
-      potato.path[potato.tot++] = player_id;
+      potato.path[potato.cnt++] = player_id;
       /*
             printf("This is the %dth hop, the rest of hops is %d\n", potato.tot,
                    potato.hops);
       */
       if (potato.hops == 0) {
-        char *ptr = serialize_potato(potato);
-        if (send(fd_master, ptr, BUFFER_SIZE * sizeof(*ptr), 0) !=
-            BUFFER_SIZE) {
-          printf("Send error\n");
+        if (send(fd_master, &potato, sizeof(potato), 0) !=
+            sizeof(potato)) {
+          std::cerr << "Send error\n";
         }
-        // printf("Sending to master\n");
-        printf("I'm it\n");
-        free(ptr);
-        continue;
+        std::cout << "I'm it\n";
       }
 
       int random = rand() % 2;
       printf("Sending potato to %d\n",
              random == 0 ? ((player_id - 1 + num_players) % num_players)
                          : (player_id + 1) % num_players);
-      char *ptr = serialize_potato(potato);
-      if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+      if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato) ) {
         printf("Send error\n");
       }
-      free(ptr);
       // printf("Sending to %s\n", random == 0 ? "left" : "right");
     }
   }
@@ -218,7 +173,7 @@ public:
            new_fd);
     */
     stayListening();
-    // cout << "[SUCCESS]End listening\n";
+    puts("[SUCCESS]End listening");
     sleep(1);
   }
 };

@@ -9,82 +9,28 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#define BASE_PORT 30000
-#define BUFFER_SIZE 2500
-using namespace std;
+#define BACKLOG 100
 
-struct potato_tag {
+class Potato {
+public:
   int hops;
-  int tot;
-  int terminate;
+  int cnt;
   int path[512];
+  Potato():hops(0), cnt(0) {}
+
+  void print(){
+    printf("Trace of potato:\n");
+    for (int i = 0; i < cnt; i++) {
+      printf("%d%c", path[i], i == cnt - 1 ? '\n' : ',');
+    }
+  }
 };
-typedef struct potato_tag potato_t;
 
-char *serialize_potato(const potato_t &potato) {
-  char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
-  memset(ptr, 0, BUFFER_SIZE);
-  sprintf(ptr, "%d", potato.hops);
-  sprintf(ptr, "%s,%d", ptr, potato.tot);
-  sprintf(ptr, "%s,%d", ptr, potato.terminate);
-  for (int i = 0; i < potato.tot; i++) {
-    sprintf(ptr, "%s,%d", ptr, potato.path[i]);
-  }
-  return ptr;
-}
-
-potato_t deserialize_potato(char *str) {
-  char *token;
-  const char s[2] = ",";
-  /* get the first token */
-  potato_t potato;
-  token = strtok(str, s);
-  sscanf(token, "%d", &potato.hops);
-  token = strtok(NULL, s);
-  sscanf(token, "%d", &potato.tot);
-  token = strtok(NULL, s);
-  sscanf(token, "%d", &potato.terminate);
-
-  /* walk through other tokens */
-  for (int i = 0; i < potato.tot; i++) {
-    token = strtok(NULL, s);
-    sscanf(token, "%d", potato.path + i);
-  }
-
-  // free(str);
-  return potato;
-}
-
-int recv_data(int fd, char *buf) {
-  int tot = 0, len;
-  while (1) {
-    len = recv(fd, buf + tot, BUFFER_SIZE - tot, 0);
-    if (len == 0) break;
-    tot += len;
-    if (tot == BUFFER_SIZE) return 0;
-  }
-  return tot;
-}
-
-struct meta_info_tag {
+class MetaInfo {
+public:
   char addr[100];
   int port;
 };
-typedef struct meta_info_tag meta_info_t;
-
-char *serialize_meta(const meta_info_t &meta) {
-  char *ptr = (char *)malloc(BUFFER_SIZE * sizeof(*ptr));
-  memset(ptr, 0, BUFFER_SIZE);
-  sprintf(ptr, "%d,%s", meta.port, meta.addr);
-  return ptr;
-}
-
-meta_info_t deserialize_meta(char *ptr) {
-  meta_info_t meta;
-  memset(&meta, 0, sizeof(meta));
-  sscanf(ptr, "%d,%s", &meta.port, meta.addr);
-  return meta;
-}
 
 class Server {
 public:
@@ -93,11 +39,15 @@ public:
   int new_fd; // fd after accept
   int status;
 
-  // return value: port id
-  int buildServer();
+  void init(char *_port); //  load up address structs with getaddrinfo():
+  void set_sin_port(); // only apply to build server with system assigned port
+  void create_socket();
+  int get_port(); // only apply to build server with system assigned port
 
-  void buildServer(char *_port);
-
+  // return value: system assigened port id
+  int buildServer(); // player
+  void buildServer(char *_port); // master
+  
   // return value: new_fd
   int accept_connection(char **ip);
 
@@ -106,98 +56,70 @@ public:
   }
 };
 
-int Server::buildServer() { // no port specified
-  memset(&host_info, 0, sizeof(host_info));
-
+void Server::init(char *_port){
   host_info.ai_family = AF_UNSPEC;
   host_info.ai_socktype = SOCK_STREAM;
   host_info.ai_flags = AI_PASSIVE;
 
-  status = getaddrinfo(NULL, "", &host_info, &host_info_list);
+  status = getaddrinfo(NULL, _port, &host_info, &host_info_list);
   if (status != 0) {
-    cerr << "Error: cannot get address info for host" << endl;
+    std::cerr << "Error: cannot get address info for host" << std::endl;
     exit(EXIT_FAILURE);
-  } // if
+  } 
+}
 
+void Server::set_sin_port(){
+  // ask os to assign a port
+  struct sockaddr_in *addr_in = (struct sockaddr_in *)(host_info_list->ai_addr);
+  addr_in->sin_port = 0;
+}
+
+void Server::create_socket() {
   sockfd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
                   host_info_list->ai_protocol);
   if (sockfd == -1) {
-    cerr << "Error: cannot create socket" << endl;
+    std::cerr << "Error: cannot create socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
 
   int yes = 1;
   status = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
-  // ask os to assign a port
-  struct sockaddr_in *addr_in = (struct sockaddr_in *)(host_info_list->ai_addr);
-  addr_in->sin_port = 0;
-
   status = bind(sockfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
   if (status == -1) {
-    cerr << "Error: cannot bind socket" << endl;
+    std::cerr << "Error: cannot bind socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
 
-  status = listen(sockfd, 100);
+  status = listen(sockfd, BACKLOG);
   if (status == -1) {
-    cerr << "Error: cannot listen on socket" << endl;
+    std::cerr << "Error: cannot listen on socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
 
   freeaddrinfo(host_info_list);
+}
 
+int Server::get_port(){
   // get OS assigned port
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
   if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname error");
-  //  cout << "Waiting for connection on port " << ntohs(sin.sin_port) <<
-  //  endl;
+  std::cout << "Waiting for connection on port " << ntohs(sin.sin_port) <<  std::endl;
   return ntohs(sin.sin_port);
 }
 
+int Server::buildServer() { // no port specified
+  init(""); // system assigened port
+  set_sin_port();
+  create_socket();
+  int _port = get_port();
+  return _port;
+}
+
 void Server::buildServer(char *port) {
-  memset(&host_info, 0, sizeof(host_info));
-
-  char *hostname = NULL;
-
-  host_info.ai_family = AF_UNSPEC;
-  host_info.ai_socktype = SOCK_STREAM;
-  host_info.ai_flags = AI_PASSIVE;
-
-  status = getaddrinfo(NULL, port, &host_info, &host_info_list);
-  if (status != 0) {
-    cerr << "Error: cannot get address info for host" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    exit(EXIT_FAILURE);
-  } // if
-
-  sockfd = socket(host_info_list->ai_family, host_info_list->ai_socktype,
-                  host_info_list->ai_protocol);
-  if (sockfd == -1) {
-    cerr << "Error: cannot create socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    exit(EXIT_FAILURE);
-  } // if
-
-  int yes = 1;
-  status = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-  status = bind(sockfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
-  if (status == -1) {
-    cerr << "Error: cannot bind socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    exit(EXIT_FAILURE);
-  } // if
-
-  status = listen(sockfd, 100);
-  if (status == -1) {
-    cerr << "Error: cannot listen on socket" << endl;
-    cerr << "  (" << hostname << "," << port << ")" << endl;
-    exit(EXIT_FAILURE);
-  } // if
-
-  freeaddrinfo(host_info_list);
+  init(port); 
+  create_socket();
 }
 
 int Server::accept_connection(char **ip) {
@@ -205,11 +127,12 @@ int Server::accept_connection(char **ip) {
   socklen_t socket_addr_len = sizeof(socket_addr);
   new_fd = accept(sockfd, (struct sockaddr *)&socket_addr, &socket_addr_len);
   if (new_fd == -1) {
-    cerr << "Error: cannot accept connection on socket" << endl;
+    std::cerr << "Error: cannot accept connection on socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
-  struct sockaddr_in *temp = (struct sockaddr_in *)&socket_addr;
-  *ip = strdup(inet_ntoa(temp->sin_addr));
-
+  if(ip != NULL) {
+    struct sockaddr_in *temp = (struct sockaddr_in *)&socket_addr;
+    *ip = strdup(inet_ntoa(temp->sin_addr));
+  }
   return new_fd;
 }

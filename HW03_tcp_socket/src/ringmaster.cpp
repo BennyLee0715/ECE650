@@ -15,7 +15,6 @@ public:
     ip = (char **)malloc(num_players * sizeof(*ip));
     fd = (int *)malloc(num_players * sizeof(*fd));
     port = (int *)malloc(num_players * sizeof(*port));
-
     this->buildServer(arg[1]);
   }
 
@@ -40,19 +39,15 @@ public:
   void build_connections() {
     for (int i = 0; i < num_players; i++) {
       fd[i] = accept_connection(&ip[i]);
-      free(ip[i]);
-
+ 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
 
       // send num_players
       send(fd[i], &num_players, sizeof(num_players), 0);
-      char buffer[BUFFER_SIZE];
-      recv_data(fd[i], buffer);
-      meta_info_t meta_info = deserialize_meta(buffer);
-      ip[i] = strdup(meta_info.addr);
-      port[i] = meta_info.port;
-
+      
+      // recv listening port of player i
+      recv(fd[i], &port[i], sizeof(port[i]), MSG_WAITALL);
       std::cout << "Player " << i << " is ready to play\n";
     }
   }
@@ -60,49 +55,34 @@ public:
   // build connections between players
   void build_circle() {
     for (int i = 0; i < num_players; i++) {
-      meta_info_t meta_info;
-      memset(&meta_info, 0, sizeof(meta_info_t));
+      MetaInfo meta_info;
+      memset(&meta_info, 0, sizeof(meta_info));
       int next_id = (i + 1) % num_players;
       meta_info.port = port[next_id];
       strcpy(meta_info.addr, ip[next_id]);
-
-      char *ptr = serialize_meta(meta_info);
-      send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0);
-      free(ptr);
+      send(fd[i], &meta_info, sizeof(meta_info), 0);
     }
   }
 
-  void printPotato(potato_t &potato) {
-    printf("Trace of potato:\n");
-    for (int i = 0; i < potato.tot; i++) {
-      printf("%d%c", potato.path[i], i == potato.tot - 1 ? '\n' : ',');
-    }
-  }
 
-  void sendPotato() {
-    potato_t potato;
-    memset(&potato, 0, sizeof(potato_t));
+  void playPotato() {
+    Potato potato;
     potato.hops = num_hops;
     if (num_hops == 0) { // end game
-      potato.terminate = 1;
-      char *ptr = serialize_potato(potato);
       for (int i = 0; i < num_players; i++) {
-        if (send(fd[i], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+        if (send(fd[i], &potato, sizeof(potato), 0) != sizeof(potato)) {
           perror("Send a broken potato\n");
         }
       }
-      free(ptr);
       return;
     }
 
     // send potato out
     int random = rand() % num_players;
     printf("Ready to start the game, sending potato to player %d\n", random);
-    char *ptr = serialize_potato(potato);
-    if (send(fd[random], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+    if (send(fd[random], &potato, sizeof(potato), 0) != sizeof(potato)) {
       perror("Send a broken potato\n");
     }
-    free(ptr);
 
     fd_set rfds;
     FD_ZERO(&rfds);
@@ -111,33 +91,25 @@ public:
     }
     int nfds = new_fd + 1;
     int ret = select(nfds, &rfds, NULL, NULL, NULL);
-    if (ret == -1) {
-      perror("select()");
-    }
     assert(ret == 1);
     for (int i = 0; i < num_players; i++) {
       if (FD_ISSET(fd[i], &rfds)) {
-        char buf[BUFFER_SIZE];
-        memset(buf, 0, sizeof(buf));
         int len = 0;
-        if (len = recv_data(fd[i], buf)) {
+        if ((len = recv(fd[i], &potato, sizeof(potato), MSG_WAITALL)) != sizeof(potato)) {
           printf("Received a wired potato whose length is %d\n", len);
           perror("Received an broken potato:\n");
         }
-        potato = deserialize_potato(buf);
-        potato.terminate = 1;
-        char *ptr = serialize_potato(potato);
+
         for (int j = 0; j < num_players; j++) {
-          if (send(fd[j], ptr, BUFFER_SIZE * sizeof(*ptr), 0) != BUFFER_SIZE) {
+          if (send(fd[j], &potato, sizeof(potato), 0) != sizeof(potato)) {
             perror("broken");
           }
         }
-        free(ptr);
         break;
       }
     }
 
-    printPotato(potato);
+    potato.print();
     sleep(1);
   }
 
@@ -165,16 +137,17 @@ public:
       printf("[good]Blocked 5s successfully\n");
     }
   }
+  
   void run() {
     print_init();
-    // puts("[Steo 1] SUCCESS: become a server");
+    puts("[Steo 1] SUCCESS: become a server");
     build_connections();
     // test_block();
     build_circle();
     // test_block();
-    // puts("[Step 2] SUCCESS: all players connected");
-    sendPotato();
-    // puts("[Step 3] Potato got back");
+    puts("[Step 2] SUCCESS: all players connected");
+    playPotato();
+    puts("[Step 3] Potato got back");
   }
 };
 
