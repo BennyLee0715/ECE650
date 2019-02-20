@@ -105,8 +105,8 @@ int Server::get_port() {
   socklen_t len = sizeof(sin);
   if (getsockname(sockfd, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname error");
-  std::cout << "Waiting for connection on port " << ntohs(sin.sin_port)
-            << std::endl;
+  //  std::cout << "Waiting for connection on port " << ntohs(sin.sin_port)
+  //<< std::endl;
   return ntohs(sin.sin_port);
 }
 
