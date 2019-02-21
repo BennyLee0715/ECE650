@@ -6,9 +6,11 @@
 #include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #define BACKLOG 100
 
 class Potato {
@@ -16,7 +18,9 @@ public:
   int hops;
   int cnt;
   int path[512];
-  Potato() : hops(0), cnt(0) {}
+  Potato() : hops(0), cnt(0) {
+    memset(path, 0, sizeof(path));
+  }
 
   void print() {
     printf("Trace of potato:\n");
@@ -30,6 +34,9 @@ class MetaInfo {
 public:
   char addr[100];
   int port;
+  MetaInfo() : port(-1) {
+    memset(addr, 0, sizeof(addr));
+  }
 };
 
 class Server {
@@ -49,7 +56,7 @@ public:
   void buildServer(char *_port); // master
 
   // return value: new_fd
-  int accept_connection(char **ip);
+  int accept_connection(std::string &ip);
 
   virtual ~Server() {
     close(sockfd);
@@ -57,6 +64,7 @@ public:
 };
 
 void Server::init(const char *_port) {
+  memset(&host_info, 0, sizeof(host_info));
   host_info.ai_family = AF_UNSPEC;
   host_info.ai_socktype = SOCK_STREAM;
   host_info.ai_flags = AI_PASSIVE;
@@ -123,7 +131,7 @@ void Server::buildServer(char *port) {
   create_socket();
 }
 
-int Server::accept_connection(char **ip) {
+int Server::accept_connection(std::string &ip) {
   struct sockaddr_storage socket_addr;
   socklen_t socket_addr_len = sizeof(socket_addr);
   new_fd = accept(sockfd, (struct sockaddr *)&socket_addr, &socket_addr_len);
@@ -131,9 +139,7 @@ int Server::accept_connection(char **ip) {
     std::cerr << "Error: cannot accept connection on socket" << std::endl;
     exit(EXIT_FAILURE);
   } // if
-  if (ip != NULL) {
-    struct sockaddr_in *temp = (struct sockaddr_in *)&socket_addr;
-    *ip = strdup(inet_ntoa(temp->sin_addr));
-  }
+  struct sockaddr_in *temp = (struct sockaddr_in *)&socket_addr;
+  ip = inet_ntoa(temp->sin_addr);
   return new_fd;
 }

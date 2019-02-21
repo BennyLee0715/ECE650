@@ -53,6 +53,7 @@ public:
       std::cerr << "  (" << hostname << "," << port << ")" << std::endl;
       perror("[MYF]error exit -1\n");
       exit(EXIT_FAILURE);
+
     } // if
 
     freeaddrinfo(host_info_list);
@@ -82,7 +83,8 @@ public:
     char port_id[9];
     sprintf(port_id, "%d", meta_info.port);
     connectServer(meta_info.addr, port_id, fd_neigh);
-    accept_connection(NULL);
+    std::string temp;
+    accept_connection(temp);
   }
 
   void stayListening() {
@@ -92,7 +94,6 @@ public:
     int fd[] = {new_fd, fd_neigh, fd_master};
     int nfds = 1 + (new_fd > fd_neigh ? new_fd : fd_neigh);
     while (1) {
-      memset(&potato, 0, sizeof(potato));
       FD_ZERO(&rfds);
       for (int i = 0; i < 3; i++)
         FD_SET(fd[i], &rfds);
@@ -139,6 +140,7 @@ public:
 };
 
 int main(int argc, char **argv) {
+  if (argc < 3) std::cout << "Usage: ./player <machine_name> <port_num>\n";
   Player *player = new Player(argv);
   player->run();
   delete player;

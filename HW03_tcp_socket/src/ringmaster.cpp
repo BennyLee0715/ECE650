@@ -1,31 +1,27 @@
 #include "potato.h"
-#include <iostream>
+#include <vector>
 
 class Ringmaster : public Server {
 public:
   int num_players;
   int num_hops;
-  int *fd;
-  char **ip;
-  int *port;
+  std::vector<int> fd;
+  std::vector<std::string> ip;
+  std::vector<int> port;
 
   Ringmaster(char **arg) {
     num_players = atoi(arg[2]);
     num_hops = atoi(arg[3]);
-    ip = (char **)malloc(num_players * sizeof(*ip));
-    fd = (int *)malloc(num_players * sizeof(*fd));
-    port = (int *)malloc(num_players * sizeof(*port));
+    fd.resize(num_players);
+    ip.resize(num_players);
+    port.resize(num_players);
     this->buildServer(arg[1]);
   }
 
   virtual ~Ringmaster() {
     for (int i = 0; i < num_players; i++) {
       close(fd[i]);
-      free(ip[i]);
     }
-    free(ip);
-    free(fd);
-    free(port);
   }
 
   void print_init() {
@@ -38,7 +34,7 @@ public:
   // Server: master, Client: player
   void build_connections() {
     for (int i = 0; i < num_players; i++) {
-      fd[i] = accept_connection(&ip[i]);
+      fd[i] = accept_connection(ip[i]);
 
       // send player_id
       send(fd[i], &i, sizeof(i), 0);
@@ -56,10 +52,9 @@ public:
   void build_circle() {
     for (int i = 0; i < num_players; i++) {
       MetaInfo meta_info;
-      memset(&meta_info, 0, sizeof(meta_info));
       int next_id = (i + 1) % num_players;
       meta_info.port = port[next_id];
-      strcpy(meta_info.addr, ip[next_id]);
+      strcpy(meta_info.addr, ip[next_id].c_str());
       send(fd[i], &meta_info, sizeof(meta_info), 0);
     }
   }
@@ -123,6 +118,8 @@ public:
 };
 
 int main(int argc, char **argv) {
+  if (argc < 4)
+    std::cout << "Usage: ./ringmaster <port_num> <num_players> <num_hops>\n";
   Ringmaster *ringmaster = new Ringmaster(argv);
   ringmaster->run();
   delete ringmaster;
