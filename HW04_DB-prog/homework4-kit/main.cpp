@@ -33,7 +33,6 @@ void buildTables(string filename, connection *C)
   while (std::getline(ifs, tmp))
   {
     sql += tmp;
-    cout << tmp << "\n";
   }
   ifs.close();
 
@@ -58,7 +57,24 @@ void buildState(string filename, connection *C) {
     string name;
     ss >> state_id >> name;
     sql =  "INSERT INTO state (state_id, name) VALUES (" + state_id + ", '" + name + "'); ";
-    cout << sql << endl;
+    work W(*C);
+    W.exec(sql);
+    W.commit();
+  }
+  ifs.close();
+}
+
+void buildColor(string filename, connection *C) {
+  string sql, tmp;
+  std::ifstream ifs;
+  ifs.open(filename.c_str(), std::ifstream::in);
+  while (std::getline(ifs, tmp))
+  {
+    stringstream ss;
+    ss << tmp;
+    string color_id, name;
+    ss >> color_id >> name;
+    sql =  "INSERT INTO color (color_id, name) VALUES (" + state_id + ", '" + name + "'); ";
     work W(*C);
     W.exec(sql);
     W.commit();
@@ -67,11 +83,39 @@ void buildState(string filename, connection *C) {
 }
 
 void buildTeam(string filename, connection *C) {
-  
+  string sql, tmp;
+  std::ifstream ifs;
+  ifs.open(filename.c_str(), std::ifstream::in);
+  while (std::getline(ifs, tmp))
+  {
+    stringstream ss;
+    ss << tmp;
+    string team_id, name, state_id, color_id, wins, losses;
+    ss >> team_id >> name >> state_id >> color_id >> wins >> losses;
+    sql =  "INSERT INTO team (team_id, name, state_id, color_id, wins, losses) VALUES (" + team_id + ", " + name + ", " + state_id + ", " + color_id + ", " + wins + ", " + losses + "'); ";
+    work W(*C);
+    W.exec(sql);
+    W.commit();
+  }
+  ifs.close();
 }
 
 void buildPlayer(string filename, connection *C) {
-  
+  string sql, tmp;
+  std::ifstream ifs;
+  ifs.open(filename.c_str(), std::ifstream::in);
+  while (std::getline(ifs, tmp))
+  {
+    stringstream ss;
+    ss << tmp;
+    string player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg;
+    ss >> player_id >> team_id >> uniform_num >> first_name >> last_name >> mpg >> ppg >> rpg >> apg >> spg >> bpg;
+    sql =  "INSERT INTO player (player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg) VALUES (" + player_id + ", " + team_id + ", " + uniform_num + ", " + first_name + ", " + last_name + ", " + mpg + ", " + ppg + ", " + rpg + ", " + apg + ", " + spg + ", " + bpg + "'); ";
+    work W(*C);
+    W.exec(sql);
+    W.commit();
+  }
+  ifs.close();
 }
 
 int main(int argc, char *argv[])
@@ -88,8 +132,11 @@ int main(int argc, char *argv[])
 
     //TODO 2: load each table with rows from the provided source txt files
     buildState("state.txt", C);
-
+    buildColor("color.txt", C);
+    buildTeam("team.txt", C);
+    buildPlayer("player.txt", C);
     
+
     // Test
     exercise(C);
 
