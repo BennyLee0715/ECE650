@@ -45,75 +45,65 @@ void buildTables(string filename, connection *C)
   cout << "Table created successfully" << endl;
 }
 
-void buildState(string filename, connection *C) {
-  string sql, tmp;
+void buildState(string filename, connection *C)
+{
+  string state_id, name, tmp;
   std::ifstream ifs;
   ifs.open(filename.c_str(), std::ifstream::in);
   while (std::getline(ifs, tmp))
   {
     stringstream ss;
     ss << tmp;
-    string state_id;
-    string name;
     ss >> state_id >> name;
-    work W(*C);
-    sql =  "INSERT INTO state (state_id, name) VALUES (" + state_id + ", " + W.quote(name) + "); ";
-    W.exec(sql);
-    W.commit();
+    add_player(C, name);
   }
   ifs.close();
 }
 
-void buildColor(string filename, connection *C) {
-  string sql, tmp;
+void buildColor(string filename, connection *C)
+{
+  string color_id, name, tmp;
   std::ifstream ifs;
   ifs.open(filename.c_str(), std::ifstream::in);
   while (std::getline(ifs, tmp))
   {
     stringstream ss;
     ss << tmp;
-    string color_id, name;
     ss >> color_id >> name;
-    work W(*C);
-    sql =  "INSERT INTO color (color_id, name) VALUES (" + color_id + ", " + W.quote(name) + "); ";
-    W.exec(sql);
-    W.commit();
+    add_color(C, name);
   }
   ifs.close();
 }
 
-void buildTeam(string filename, connection *C) {
-  string sql, tmp;
+void buildTeam(string filename, connection *C)
+{
+  string sql, tmp, name;
+  int team_id, state_id, color_id, wins, losses;
   std::ifstream ifs;
   ifs.open(filename.c_str(), std::ifstream::in);
   while (std::getline(ifs, tmp))
   {
     stringstream ss;
     ss << tmp;
-    string team_id, name, state_id, color_id, wins, losses;
     ss >> team_id >> name >> state_id >> color_id >> wins >> losses;
-    work W(*C);
-    sql =  "INSERT INTO team (team_id, name, state_id, color_id, wins, losses) VALUES (" + team_id + ", " + W.quote(name) + ", " + state_id + ", " + color_id + ", " + wins + ", " + losses + "); ";
-    W.exec(sql);
-    W.commit();
+    add_team(C, name, state_id, color_id, wins, losses);
   }
   ifs.close();
 }
 
-void buildPlayer(string filename, connection *C) {
-  string sql, tmp;
+void buildPlayer(string filename, connection *C)
+{
+  string tmp, first_name, last_name;
+  int player_id, team_id, uniform_num, mpg, ppg, rpg, apg;
+  double spg, bpg;
   std::ifstream ifs;
   ifs.open(filename.c_str(), std::ifstream::in);
   while (std::getline(ifs, tmp))
   {
     stringstream ss;
     ss << tmp;
-    string player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg;
     ss >> player_id >> team_id >> uniform_num >> first_name >> last_name >> mpg >> ppg >> rpg >> apg >> spg >> bpg;
-    work W(*C);
-    sql =  "INSERT INTO player (player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg) VALUES (" + player_id + ", " + team_id + ", " + uniform_num + ", " + W.quote(first_name) + ", " + W.quote(last_name) + ", " + mpg + ", " + ppg + ", " + rpg + ", " + apg + ", " + spg + ", " + bpg + "); ";
-    W.exec(sql);
-    W.commit();
+    add_player(C, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg);
   }
   ifs.close();
 }
@@ -135,7 +125,6 @@ int main(int argc, char *argv[])
     buildColor("color.txt", C);
     buildTeam("team.txt", C);
     buildPlayer("player.txt", C);
-    
 
     // Test
     exercise(C);
