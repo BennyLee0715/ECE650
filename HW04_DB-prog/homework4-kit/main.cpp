@@ -56,8 +56,8 @@ void buildState(string filename, connection *C) {
     string state_id;
     string name;
     ss >> state_id >> name;
-    sql =  "INSERT INTO state (state_id, name) VALUES (" + state_id + ", '" + name + "'); ";
     work W(*C);
+    sql =  "INSERT INTO state (state_id, name) VALUES (" + state_id + ", " + W.quote(name) + "); ";
     W.exec(sql);
     W.commit();
   }
@@ -74,8 +74,8 @@ void buildColor(string filename, connection *C) {
     ss << tmp;
     string color_id, name;
     ss >> color_id >> name;
-    sql =  "INSERT INTO color (color_id, name) VALUES (" + state_id + ", '" + name + "'); ";
     work W(*C);
+    sql =  "INSERT INTO color (color_id, name) VALUES (" + color_id + ", " + W.quote(name) + "); ";
     W.exec(sql);
     W.commit();
   }
@@ -92,8 +92,8 @@ void buildTeam(string filename, connection *C) {
     ss << tmp;
     string team_id, name, state_id, color_id, wins, losses;
     ss >> team_id >> name >> state_id >> color_id >> wins >> losses;
-    sql =  "INSERT INTO team (team_id, name, state_id, color_id, wins, losses) VALUES (" + team_id + ", " + name + ", " + state_id + ", " + color_id + ", " + wins + ", " + losses + "'); ";
     work W(*C);
+    sql =  "INSERT INTO team (team_id, name, state_id, color_id, wins, losses) VALUES (" + team_id + ", " + W.quote(name) + ", " + state_id + ", " + color_id + ", " + wins + ", " + losses + "); ";
     W.exec(sql);
     W.commit();
   }
@@ -110,8 +110,8 @@ void buildPlayer(string filename, connection *C) {
     ss << tmp;
     string player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg;
     ss >> player_id >> team_id >> uniform_num >> first_name >> last_name >> mpg >> ppg >> rpg >> apg >> spg >> bpg;
-    sql =  "INSERT INTO player (player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg) VALUES (" + player_id + ", " + team_id + ", " + uniform_num + ", " + first_name + ", " + last_name + ", " + mpg + ", " + ppg + ", " + rpg + ", " + apg + ", " + spg + ", " + bpg + "'); ";
     work W(*C);
+    sql =  "INSERT INTO player (player_id, team_id, uniform_num, first_name, last_name, mpg, ppg, rpg, apg, spg, bpg) VALUES (" + player_id + ", " + team_id + ", " + uniform_num + ", " + W.quote(first_name) + ", " + W.quote(last_name) + ", " + mpg + ", " + ppg + ", " + rpg + ", " + apg + ", " + spg + ", " + bpg + "); ";
     W.exec(sql);
     W.commit();
   }
