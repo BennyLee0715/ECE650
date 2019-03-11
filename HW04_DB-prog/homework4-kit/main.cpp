@@ -55,7 +55,7 @@ void buildState(string filename, connection *C)
     stringstream ss;
     ss << tmp;
     ss >> state_id >> name;
-    add_player(C, name);
+    add_state(C, name);
   }
   ifs.close();
 }
