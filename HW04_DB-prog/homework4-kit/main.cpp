@@ -20,8 +20,8 @@ connection *buildConn()
   else
   {
     cout << "Can't open database" << endl;
-    return 1;
   }
+  return C;
 }
 
 void buildTables(string filename, connection *C)
@@ -33,11 +33,12 @@ void buildTables(string filename, connection *C)
   while (std::getline(ifs, tmp))
   {
     sql += tmp;
+    cout << tmp << "\n";
   }
   ifs.close();
 
   /* Create a transactional object. */
-  work W(C);
+  work W(*C);
 
   /* Execute SQL query */
   W.exec(sql);
@@ -53,12 +54,12 @@ void buildState(string filename, connection *C) {
   {
     stringstream ss;
     ss << tmp;
-    int state_id;
+    string state_id;
     string name;
     ss >> state_id >> name;
-    ss.str("");
-    ss << "INSERT INTO state (state_id, name) VALUES (" << state_id << ", '" << name << "'); "
-    sql = ss.str();
+    sql =  "INSERT INTO state (state_id, name) VALUES (" + state_id + ", '" + name + "'); ";
+    cout << sql << endl;
+    work W(*C);
     W.exec(sql);
     W.commit();
   }
