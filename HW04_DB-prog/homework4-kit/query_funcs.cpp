@@ -170,7 +170,7 @@ void query4(connection *C, string team_state, string team_color) {
 void query5(connection *C, int num_wins) {
   work W(*C);
   stringstream sql;
-  sql << "select player.first_name, player.last_name, team.name, team.wins from player, team where player.team_id = team.team_id and team.wins >= " << num_wins << ";";
+  sql << "select player.first_name, player.last_name, team.name, team.wins from player, team where player.team_id = team.team_id and team.wins > " << num_wins << ";";
     W.commit();
   nontransaction N(*C);
   result R(N.exec(sql.str()));
