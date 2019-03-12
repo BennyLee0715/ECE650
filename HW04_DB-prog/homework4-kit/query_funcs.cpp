@@ -157,7 +157,25 @@ void query3(connection *C, string team_name) {
 
 void query4(connection *C, string team_state, string team_color) {
   work W(*C);
-  string sql = 
+  string sql = "select player.first_name, player.last_name, player.uniform_num, color.name, state.name from player, team, color, state where player.team_id = team.team_id AND team.color_id = color.color_id AND team.state_id = state.state_id AND state.name = " + W.quote(team_state) + " AND color.name = " + W.quote(team_color) + ";";
+  W.commit();
+  nontransaction N(*C);
+  result R(N.exec(sql));
+  cout << "FIRST_NAME LAST_NAME UNIFORM_NUM\n";
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    cout << c[0].as<string>() << " " << c[1].as<string>() << " " << c[2].as<int>() << "\n";
+  }
 }
 
-void query5(connection *C, int num_wins) {}
+void query5(connection *C, int num_wins) {
+  work W(*C);
+  stringstream sql;
+  sql << "select player.first_name, player.last_name, team.name, team.wins from player, team where player.team_id = team.team_id and team.wins >= " << num_wins << ";";
+    W.commit();
+  nontransaction N(*C);
+  result R(N.exec(sql.str()));
+  cout << "FIRST_NAME LAST_NAME TEAM_NAME WINS\n";
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    cout << c[0].as<string>() << " " << c[1].as<string>() << " " << c[2].as<string>() << " " << c[3].as<int>() << "\n";
+  }
+}

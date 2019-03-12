@@ -7,4 +7,7 @@ void exercise(connection *C)
   query2(C, "Orange");
   query3(C, "FloridaState");
   query3(C, "Duke");
+  query4(C, "NC", "Red");
+  query4(C, "NC", "DarkBlue");
+  query5(C, 13);
 }
