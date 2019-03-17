@@ -30,3 +30,6 @@ class Player(models.Model):
     apg = models.IntegerField()
     spg = models.FloatField()
     bpg = models.FloatField()
+        
+    def __str__(self):
+        return str(self.player_id) + " " + str(self.team_id.team_id) + " " + str(self.uniform_num) + " " + self.first_name + " " + self.last_name + " " + str(self.mpg) + " " + str(self.ppg) + " " + str(self.rpg) + " " + str(self.apg) + " " + str(self.spg) + " " + str(self.bpg)
