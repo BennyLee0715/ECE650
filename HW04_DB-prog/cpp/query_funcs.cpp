@@ -1,4 +1,6 @@
 #include "query_funcs.h"
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 
 void execute(connection *C, string sql) {
@@ -119,8 +121,8 @@ void query1(connection *C, int use_mpg, int min_mpg, int max_mpg, int use_ppg,
     cout << c[0].as<int>() << " " << c[1].as<int>() << " " << c[2].as<int>()
          << " " << c[3].as<string>() << " " << c[4].as<string>() << " "
          << c[5].as<int>() << " " << c[6].as<int>() << " " << c[7].as<int>()
-         << " " << c[8].as<int>() << " " << c[9].as<double>() << " "
-         << c[10].as<double>() << "\n";
+         << " " << c[8].as<int>() << " " << fixed << setprecision(1)
+         << c[9].as<double>() << " " << c[10].as<double>() << "\n";
   }
   // W.commit();
 }
@@ -164,7 +166,7 @@ void query4(connection *C, string team_state, string team_color) {
   W.commit();
   nontransaction N(*C);
   result R(N.exec(sql));
-  cout << "FIRST_NAME LAST_NAME JERSEY_NUM\n";
+  cout << "FIRST_NAME LAST_NAME UNIFORM_NUM\n";
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     cout << c[0].as<string>() << " " << c[1].as<string>() << " "
          << c[2].as<int>() << "\n";
