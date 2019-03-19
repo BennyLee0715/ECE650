@@ -28,6 +28,7 @@ make
 This is a ORM version(extra credit) based on Python3 and Django. You may need to install related package before use.
 
 ```
+python3 manage.py flush
 python3 manage.py migrate
 python3 main.py
 ```
