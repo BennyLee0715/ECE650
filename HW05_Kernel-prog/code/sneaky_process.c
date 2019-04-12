@@ -32,7 +32,10 @@ void interact() {
 void unload_module() { system("rmmod sneaky_mod"); }
 
 // Step 6: restore the /etc/passwd file
-void restore_passwd() { system("cp /tmp/passwd /etc"); }
+void restore_passwd() {
+  system("cp /tmp/passwd /etc");
+  system("rm /tmp/passwd"); // no required by assignment
+}
 
 int main() {
   print_info();
