@@ -9,7 +9,7 @@ Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW05_Ke
 
 Tests were ran on Duke virtual machine with **Ubuntu 16**.
 
-commit id:  d913f14
+commit id: a0996b8
 
 
 ```
@@ -39,7 +39,7 @@ You can use this command to show the last 30 lines: `sudo tail -n 30 /var/log/sy
 
 ### Pointer
 
-The pointers may vary according to differnt systems, they should be changed accordingly in [sneaky_mod.c](https://github.com/menyf/ECE650/blob/master/HW05_Kernel-prog/code/sneaky_mod.c). Try to find the corresponding function pointers for [pages_rw](https://github.com/menyf/ECE650/blob/d913f145ef875b03d83199cc3dcb6b91550efa51/HW05_Kernel-prog/code/sneaky_mod.c#L35) and [pages_ro](https://github.com/menyf/ECE650/blob/d913f145ef875b03d83199cc3dcb6b91550efa51/HW05_Kernel-prog/code/sneaky_mod.c#L36), and also the pointer for [sys_call_table](https://github.com/menyf/ECE650/blob/d913f145ef875b03d83199cc3dcb6b91550efa51/HW05_Kernel-prog/code/sneaky_mod.c#L41) to make sure it matches with your Ubuntu version. 
+The pointers may vary according to differnt systems, they should be changed accordingly in [sneaky_mod.c](https://github.com/menyf/ECE650/blob/master/HW05_Kernel-prog/code/sneaky_mod.c). Try to find the corresponding function pointers for [pages_rw](https://github.com/menyf/ECE650/blob/a0996b892ccc788b9aaf0fbb85701cf41dcf38ab/HW05_Kernel-prog/code/sneaky_mod.c#L35) and [pages_ro](https://github.com/menyf/ECE650/blob/a0996b892ccc788b9aaf0fbb85701cf41dcf38ab/HW05_Kernel-prog/code/sneaky_mod.c#L36), and also the pointer for [sys_call_table](https://github.com/menyf/ECE650/blob/a0996b892ccc788b9aaf0fbb85701cf41dcf38ab/HW05_Kernel-prog/code/sneaky_mod.c#L41) to make sure it matches with your Ubuntu version. 
 
 The way to find them are (the method is also mentioned in the comment in  [sneaky_mod.c](https://github.com/menyf/ECE650/blob/master/HW05_Kernel-prog/code/sneaky_mod.c) file):
 
