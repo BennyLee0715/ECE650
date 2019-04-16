@@ -51,6 +51,13 @@ ffffffff81a00200 R sys_call_table
 ffffffff81a01560 R ia32_sys_call_table
 ```
 
+### Header File and strnstr
+
+For kernel programming, we are using `linux/string.h` instead of `string.h`. When we have a buffer with some data, it is simply the data, we don't know whether there is a null terminator `\0` inside. If we simply use `strstr`, it keeps searching until a null terminator, but such a null terminator could be part of the useful data in buffer. Therefore, a `strnstr` is needed to reslove this problem elegantly.
+
+### Memory Function
+
+`memcpy` does not support memory overlap, so use `memmove` instead of `memcpy`.
 
 
 ## Reference
