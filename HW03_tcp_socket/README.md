@@ -1,5 +1,7 @@
 # TCP Socket Programming
 
+grade: 100/100
+
 ## Background
 
 Please see [homework3-program.pdf](https://github.com/menyf/ECE650/blob/master/HW03_tcp_socket/homework3-program.pdf) for specific requirement. 

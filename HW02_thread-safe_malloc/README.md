@@ -1,5 +1,7 @@
 # Malloc Implementation
 
+grade: 100/100
+
 ## Background
 
 Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW02_thread-safe_malloc/requirement.pdf) for specific requirement.

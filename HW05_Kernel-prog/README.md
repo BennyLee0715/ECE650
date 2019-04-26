@@ -1,5 +1,7 @@
 # Kernel Programming
 
+grade: 100/100
+
 ## Background
 
 Please see [requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW05_Kernel-prog/requirement.pdf) for specific requirement. 

@@ -1,5 +1,7 @@
 # Database Programming
 
+grade: 125/100
+
 ## Background
 
 Please see [homework4-requirement.pdf](https://github.com/menyf/ECE650/blob/master/HW04_DB-prog/requirement.pdf) for specific requirement. 
