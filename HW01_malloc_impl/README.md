@@ -1,6 +1,8 @@
 # Malloc Implementation
 
-grade: 100/100
+grade: ~~100~~70/100
+
+**Update 04/07/2020: The best way to implement this assignment is using singly freelist. The reason for this is to be discussed.**
 
 ## Background
 
